@@ -9,12 +9,27 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import hhlhh.model.DependencyManager;
+import hhlhh.scene.ConsentFormScene;
 import hhlhh.scene.DownloaderScene;
 
 public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        primaryStage.setTitle("Downloader Shell");
+
+        ConsentFormScene consentFormScene = new ConsentFormScene();
+        if (!ConsentFormScene.hasConsentCookie()) {
+            primaryStage.setScene(consentFormScene.create(primaryStage, () -> showDependencyInitScene(primaryStage)));
+            primaryStage.show();
+            return;
+        }
+
+        showDependencyInitScene(primaryStage);
+        primaryStage.show();
+    }
+
+    private void showDependencyInitScene(Stage primaryStage) {
         Label statusLabel = new Label("Verifying runtime dependencies...");
         ProgressIndicator progress = new ProgressIndicator();
         VBox root = new VBox(15, statusLabel, progress);
@@ -41,10 +56,10 @@ public class App extends Application {
             progress.setVisible(false);
         });
 
-        new Thread(initTask).start();
-
         primaryStage.setScene(new Scene(root, 400, 200));
-        primaryStage.setTitle("Downloader Shell");
-        primaryStage.show();
+
+        Thread thread = new Thread(initTask, "dependency-init");
+        thread.setDaemon(true);
+        thread.start();
     }
 }
