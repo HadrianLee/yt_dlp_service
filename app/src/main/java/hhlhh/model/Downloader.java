@@ -104,17 +104,6 @@ public class Downloader {
     }
 
     private Path resolveDefaultDownloadPath() {
-        try {
-            URI codeLocation = Downloader.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-            Path executablePath = Path.of(codeLocation).toAbsolutePath().normalize();
-            Path executableDirectory = Files.isRegularFile(executablePath) ? executablePath.getParent() : executablePath;
-            if (executableDirectory != null) {
-                return executableDirectory.resolve("download").toAbsolutePath().normalize();
-            }
-        } catch (Exception e) {
-            // Fall back to the working directory when running from an IDE or unusual launcher.
-        }
-
         return Path.of(System.getProperty("user.dir")).resolve("download").toAbsolutePath().normalize();
     }
 
