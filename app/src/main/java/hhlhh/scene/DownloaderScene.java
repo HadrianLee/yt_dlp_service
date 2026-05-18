@@ -1,0 +1,93 @@
+package hhlhh.scene;
+
+import hhlhh.model.Downloader;
+
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+public class DownloaderScene {
+
+    private static final double WIDTH = 840;
+    private static final double HEIGHT = 540;
+
+    public Scene create(Stage stage) {
+        TextField urlField = new TextField();
+        urlField.setPromptText("Paste YouTube video or playlist URL");
+        Button enterButton = new Button("Enter");
+
+        TextField pathField = new TextField();
+        Button browseButton = new Button("Browse");
+
+        Button downloadButton = new Button("Download");
+        Button stopButton = new Button("Force Stop");
+        CheckBox verboseCheckBox = new CheckBox("Verbose");
+        Label statusLabel = new Label("Enter a URL to begin.");
+        Label previewTitleLabel = new Label();
+        ProgressIndicator progressIndicator = new ProgressIndicator();
+        TextArea outputArea = new TextArea();
+        ImageView thumbnailView = new ImageView();
+
+        progressIndicator.setMaxSize(24, 24);
+        outputArea.setEditable(false);
+        outputArea.setWrapText(true);
+        thumbnailView.setFitWidth(240);
+        thumbnailView.setFitHeight(135);
+        thumbnailView.setPreserveRatio(true);
+        thumbnailView.setSmooth(true);
+
+        HBox urlRow = new HBox(8, urlField, enterButton);
+        HBox.setHgrow(urlField, Priority.ALWAYS);
+
+        HBox pathRow = new HBox(8, pathField, browseButton);
+        HBox.setHgrow(pathField, Priority.ALWAYS);
+
+        HBox actionRow = new HBox(10, downloadButton, stopButton, verboseCheckBox, progressIndicator);
+        actionRow.setStyle("-fx-alignment: center-left;");
+
+        VBox preview = new VBox(8, previewTitleLabel, thumbnailView);
+
+        VBox form = new VBox(
+                10,
+                new Label("URL"),
+                urlRow,
+                new Label("Download folder"),
+                pathRow,
+                actionRow,
+                statusLabel,
+                preview,
+                outputArea
+        );
+        form.setPadding(new Insets(16));
+
+        Downloader downloader = new Downloader(
+                stage,
+                urlField,
+                pathField,
+                enterButton,
+                browseButton,
+                downloadButton,
+                stopButton,
+                verboseCheckBox,
+                statusLabel,
+                previewTitleLabel,
+                preview,
+                outputArea,
+                progressIndicator,
+                thumbnailView
+        );
+        downloader.initialize();
+
+        return new Scene(form, WIDTH, HEIGHT);
+    }
+}
