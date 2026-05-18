@@ -14,7 +14,7 @@ network policies.
 ## For Users
 
 Compiled ZIP builds are available from the project releases. Download and
-extract the ZIP, then run `app.exe` directly.
+extract the ZIP, then run `YtDlpService.exe` directly.
 
 You do not need to build the project or package it with `jpackage`.
 
