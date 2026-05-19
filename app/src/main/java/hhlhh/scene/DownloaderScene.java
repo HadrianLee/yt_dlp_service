@@ -18,9 +18,6 @@ import javafx.stage.Stage;
 
 public class DownloaderScene {
 
-    private static final double WIDTH = 840;
-    private static final double HEIGHT = 540;
-
     public Scene create(Stage stage) {
         TextField urlField = new TextField();
         urlField.setPromptText("Paste YouTube video or playlist URL");
@@ -88,6 +85,6 @@ public class DownloaderScene {
         );
         downloader.initialize();
 
-        return new Scene(form, WIDTH, HEIGHT);
+        return new Scene(form);
     }
 }

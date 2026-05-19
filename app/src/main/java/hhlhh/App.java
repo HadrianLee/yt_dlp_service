@@ -8,19 +8,25 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import hhlhh.model.ConsentFormService;
 import hhlhh.model.DependencyManager;
 import hhlhh.scene.ConsentFormScene;
 import hhlhh.scene.DownloaderScene;
 
 public class App extends Application {
 
+    private static final double WINDOW_WIDTH = 840;
+    private static final double WINDOW_HEIGHT = 540;
+
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Downloader Shell");
+        applyWindowSize(primaryStage);
 
-        ConsentFormScene consentFormScene = new ConsentFormScene();
-        if (!ConsentFormScene.hasConsentCookie()) {
-            primaryStage.setScene(consentFormScene.create(primaryStage, () -> showDependencyInitScene(primaryStage)));
+        ConsentFormService consentFormService = new ConsentFormService();
+        ConsentFormScene consentFormScene = new ConsentFormScene(consentFormService);
+        if (!consentFormService.hasConsentCookie()) {
+            setAppScene(primaryStage, consentFormScene.create(primaryStage, () -> showDependencyInitScene(primaryStage)));
             primaryStage.show();
             return;
         }
@@ -48,7 +54,7 @@ public class App extends Application {
         // UI Updates upon thread resolution states
         initTask.setOnSucceeded(e -> {
             statusLabel.setText("Ready! Launching Downloader App Interface...");
-            primaryStage.setScene(new DownloaderScene().create(primaryStage));
+            setAppScene(primaryStage, new DownloaderScene().create(primaryStage));
         });
 
         initTask.setOnFailed(e -> {
@@ -56,10 +62,20 @@ public class App extends Application {
             progress.setVisible(false);
         });
 
-        primaryStage.setScene(new Scene(root, 400, 200));
+        setAppScene(primaryStage, new Scene(root));
 
         Thread thread = new Thread(initTask, "dependency-init");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void setAppScene(Stage stage, Scene scene) {
+        stage.setScene(scene);
+        applyWindowSize(stage);
+    }
+
+    private void applyWindowSize(Stage stage) {
+        stage.setWidth(WINDOW_WIDTH);
+        stage.setHeight(WINDOW_HEIGHT);
     }
 }

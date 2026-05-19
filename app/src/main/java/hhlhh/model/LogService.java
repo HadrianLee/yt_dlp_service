@@ -67,7 +67,7 @@ public class LogService {
         return new DownloadedFile(index, fileName);
     }
 
-    private String escapeCsv(String value) {
+    String escapeCsv(String value) {
         if (!value.contains(",") && !value.contains("\"") && !value.contains("\n") && !value.contains("\r")) {
             return value;
         }

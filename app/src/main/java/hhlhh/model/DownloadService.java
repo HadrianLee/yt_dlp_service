@@ -146,7 +146,7 @@ public class DownloadService {
         return new UrlInspection(url.trim(), playlist, findTitle(json), findThumbnailUrl(json));
     }
 
-    private String findTitle(String json) {
+    String findTitle(String json) {
         Matcher matcher = TITLE_PATTERN.matcher(json);
         if (!matcher.find()) {
             return "Untitled";
@@ -156,7 +156,7 @@ public class DownloadService {
         return title.isBlank() ? "Untitled" : title;
     }
 
-    private String findThumbnailUrl(String json) {
+    String findThumbnailUrl(String json) {
         Matcher matcher = THUMBNAIL_PATTERN.matcher(json);
         if (matcher.find()) {
             return unescapeJsonString(matcher.group(1));
@@ -176,7 +176,7 @@ public class DownloadService {
         return thumbnailUrl.isBlank() ? "" : unescapeJsonString(thumbnailUrl);
     }
 
-    private String toSafeFolderName(String title) {
+    String toSafeFolderName(String title) {
         String safeTitle = title == null ? "" : title.trim();
         if (safeTitle.isBlank()) {
             safeTitle = "playlist";
@@ -193,7 +193,7 @@ public class DownloadService {
         return safeTitle.length() > 30 ? safeTitle.substring(0, 20) : safeTitle;
     }
 
-    private String unescapeJsonString(String value) {
+    String unescapeJsonString(String value) {
         return value.replace("\\\"", "\"")
                 .replace("\\\\", "\\")
                 .replace("\\/", "/")
@@ -203,7 +203,7 @@ public class DownloadService {
                 .replace("\\u0026", "&");
     }
 
-    private List<String> buildCommand(
+    List<String> buildCommand(
             Path ytDlpPath,
             Path ffmpegDirectory,
             Path outputTemplatePath,
@@ -237,7 +237,7 @@ public class DownloadService {
         return command;
     }
 
-    private int runCommand(List<String> command, Consumer<String> outputConsumer)
+    protected int runCommand(List<String> command, Consumer<String> outputConsumer)
             throws IOException, InterruptedException, DownloadStoppedException {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);

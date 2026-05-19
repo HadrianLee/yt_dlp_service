@@ -47,3 +47,17 @@ From the `app` directory:
 ```powershell
 mvn javafx:run
 ```
+
+### Unit Tests
+
+From the `app` directory:
+
+```powershell
+mvn test
+```
+
+The test suite lives in:
+
+```text
+app/src/test/java/
+```

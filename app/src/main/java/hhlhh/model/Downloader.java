@@ -217,7 +217,7 @@ public class Downloader {
         node.setManaged(visible);
     }
 
-    private boolean isValidYoutubeUrl(String value) {
+    boolean isValidYoutubeUrl(String value) {
         if (value == null || value.isBlank()) {
             return false;
         }
@@ -320,7 +320,7 @@ public class Downloader {
         outputArea.appendText(line + System.lineSeparator());
     }
 
-    private String toDisplayName(String title) {
+    String toDisplayName(String title) {
         String safeTitle = title == null ? "" : title.trim();
         if (safeTitle.isBlank()) {
             safeTitle = "Untitled";
@@ -340,7 +340,7 @@ public class Downloader {
         return safeTitle.isBlank() ? "Untitled" : safeTitle;
     }
 
-    private long countFiles(Path directory) {
+    long countFiles(Path directory) {
         if (directory == null || !Files.exists(directory)) {
             return 0;
         }

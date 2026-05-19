@@ -9,15 +9,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class DependencyManager {
-
-    // Define local data directory matching the User Home folder
-    private static final String APP_DIR_NAME = ".yt_dlp_service";
-    private static final Path BIN_PATH = Paths.get(System.getProperty("user.home"), APP_DIR_NAME, "bin");
 
     // Public APIs for fetching upstream builds
     private static final String YTDLP_WINDOWS_URL =
@@ -134,13 +129,13 @@ public class DependencyManager {
             throw new IllegalStateException("Unsupported Operating System Platform.");
         }
 
-        File binDir = BIN_PATH.toFile();
+        File binDir = AppPaths.binDirectory().toFile();
         if (!binDir.exists()) {
             binDir.mkdirs();
         }
 
-        Path ytDlpFile = BIN_PATH.resolve(getYtDlpBinaryName());
-        Path ffmpegFile = BIN_PATH.resolve(getFmpegbinaryName());
+        Path ytDlpFile = AppPaths.binDirectory().resolve(getYtDlpBinaryName());
+        Path ffmpegFile = AppPaths.binDirectory().resolve(getFmpegbinaryName());
 
         // --- Handle Task 1: yt-dlp check and update ---
         if (!ytDlpFile.toFile().exists()) {
@@ -164,6 +159,6 @@ public class DependencyManager {
     }
 
     public String getBinDirectoryPath() {
-        return BIN_PATH.toAbsolutePath().toString();
+        return AppPaths.binDirectory().toAbsolutePath().toString();
     }
 }
