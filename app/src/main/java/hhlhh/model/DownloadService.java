@@ -20,6 +20,11 @@ public class DownloadService {
     private static final String PLAYLIST_OUTPUT_TEMPLATE = "%(playlist_index)s - %(title)s.%(ext)s";
     private static final String SINGLE_OUTPUT_TEMPLATE = "%(title)s.%(ext)s";
     private static final Pattern THUMBNAIL_PATTERN = Pattern.compile("\"thumbnail\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern THUMBNAILS_ARRAY_PATTERN = Pattern.compile(
+            "\"thumbnails\"\\s*:\\s*\\[(.*?)\\]",
+            Pattern.DOTALL
+    );
+    private static final Pattern THUMBNAILS_URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern TITLE_PATTERN = Pattern.compile("\"title\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"");
 
     private final DependencyManager dependencyManager;
@@ -153,13 +158,22 @@ public class DownloadService {
 
     private String findThumbnailUrl(String json) {
         Matcher matcher = THUMBNAIL_PATTERN.matcher(json);
+        if (matcher.find()) {
+            return unescapeJsonString(matcher.group(1));
+        }
+
+        matcher = THUMBNAILS_ARRAY_PATTERN.matcher(json);
         if (!matcher.find()) {
             return "";
         }
 
-        return matcher.group(1)
-                .replace("\\/", "/")
-                .replace("\\u0026", "&");
+        matcher = THUMBNAILS_URL_PATTERN.matcher(matcher.group(1));
+        String thumbnailUrl = "";
+        while (matcher.find()) {
+            thumbnailUrl = matcher.group(1);
+        }
+
+        return thumbnailUrl.isBlank() ? "" : unescapeJsonString(thumbnailUrl);
     }
 
     private String toSafeFolderName(String title) {
