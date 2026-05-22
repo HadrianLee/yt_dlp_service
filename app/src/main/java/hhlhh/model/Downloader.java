@@ -7,6 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -24,7 +27,9 @@ public class Downloader {
 
     private final Stage owner;
     private final DownloadService downloadService;
+    private final SettingsService settingsService;
     private final Path defaultDownloadPath;
+    private final BooleanProperty downloadInProgress = new SimpleBooleanProperty(false);
 
     private final TextField urlField;
     private final TextField pathField;
@@ -59,8 +64,45 @@ public class Downloader {
             ProgressIndicator progressIndicator,
             ImageView thumbnailView
     ) {
+        this(
+                owner,
+                urlField,
+                pathField,
+                enterButton,
+                browseButton,
+                downloadButton,
+                stopButton,
+                verboseCheckBox,
+                statusLabel,
+                previewTitleLabel,
+                previewPane,
+                outputArea,
+                progressIndicator,
+                thumbnailView,
+                null
+        );
+    }
+
+    public Downloader(
+            Stage owner,
+            TextField urlField,
+            TextField pathField,
+            Button enterButton,
+            Button browseButton,
+            Button downloadButton,
+            Button stopButton,
+            CheckBox verboseCheckBox,
+            Label statusLabel,
+            Label previewTitleLabel,
+            VBox previewPane,
+            TextArea outputArea,
+            ProgressIndicator progressIndicator,
+            ImageView thumbnailView,
+            SettingsService settingsService
+    ) {
         this.owner = owner;
         this.downloadService = new DownloadService();
+        this.settingsService = settingsService;
         this.defaultDownloadPath = resolveDefaultDownloadPath();
         this.urlField = urlField;
         this.pathField = pathField;
@@ -75,6 +117,10 @@ public class Downloader {
         this.outputArea = outputArea;
         this.progressIndicator = progressIndicator;
         this.thumbnailView = thumbnailView;
+    }
+
+    public ReadOnlyBooleanProperty downloadInProgressProperty() {
+        return downloadInProgress;
     }
 
     public void initialize() {
@@ -254,6 +300,7 @@ public class Downloader {
         setControlsDisabled(true);
         stopButton.setDisable(false);
         progressIndicator.setVisible(true);
+        downloadInProgress.set(true);
         setVisibleAndManaged(outputArea, true);
         outputArea.clear();
         statusLabel.setText(playlist ? "Downloading playlist..." : "Downloading video...");
@@ -272,8 +319,10 @@ public class Downloader {
             } else {
                 statusLabel.setText("Video download finished in " + result.outputDirectory() + ".");
             }
+            notifyDownloadComplete(result);
             progressIndicator.setVisible(false);
             stopButton.setDisable(true);
+            downloadInProgress.set(false);
             setControlsDisabled(false);
             updateDownloadButtonState();
         });
@@ -291,6 +340,7 @@ public class Downloader {
             }
             progressIndicator.setVisible(false);
             stopButton.setDisable(true);
+            downloadInProgress.set(false);
             setControlsDisabled(false);
             updateDownloadButtonState();
         });
@@ -318,6 +368,17 @@ public class Downloader {
 
     private void appendOutput(String line) {
         outputArea.appendText(line + System.lineSeparator());
+    }
+
+    private void notifyDownloadComplete(DownloadService.DownloadResult result) {
+        if (settingsService == null) {
+            return;
+        }
+
+        String message = result.playlist()
+                ? "Playlist download finished in " + result.outputDirectory() + "."
+                : "Video download finished in " + result.outputDirectory() + ".";
+        settingsService.notifyDownloadComplete("Download complete", message);
     }
 
     String toDisplayName(String title) {

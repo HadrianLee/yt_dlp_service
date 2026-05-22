@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="hhlhh.scene.SettingsScene"
+      spacing="14"
+      styleClass="settings-panel">
+    <children>
+        <Label text="Settings" styleClass="page-title" />
+        <VBox spacing="10" styleClass="settings-group">
+            <children>
+                <CheckBox fx:id="darkModeToggle" text="Dark mode" />
+                <CheckBox fx:id="closeToTrayToggle" text="Close to tray while downloading" />
+                <Label fx:id="traySupportLabel" styleClass="muted-text" wrapText="true" />
+                <CheckBox fx:id="notificationToggle" text="Notify when complete" />
+            </children>
+        </VBox>
+    </children>
+</VBox>

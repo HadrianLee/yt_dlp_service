@@ -1,6 +1,8 @@
 package hhlhh.scene;
 
+import hhlhh.model.NavigationService;
 import hhlhh.model.Downloader;
+import hhlhh.model.SettingsService;
 
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -11,12 +13,25 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class DownloaderScene {
+
+    private final SettingsService settingsService;
+    private final NavigationService navigationService;
+
+    public DownloaderScene() {
+        this(new SettingsService(), null);
+    }
+
+    public DownloaderScene(SettingsService settingsService, NavigationService navigationService) {
+        this.settingsService = settingsService;
+        this.navigationService = navigationService;
+    }
 
     public Scene create(Stage stage) {
         TextField urlField = new TextField();
@@ -45,27 +60,31 @@ public class DownloaderScene {
 
         HBox urlRow = new HBox(8, urlField, enterButton);
         HBox.setHgrow(urlField, Priority.ALWAYS);
+        VBox urlGroup = new VBox(4, new Label("URL"), urlRow);
+        urlGroup.getStyleClass().add("field-group");
 
         HBox pathRow = new HBox(8, pathField, browseButton);
         HBox.setHgrow(pathField, Priority.ALWAYS);
+        VBox pathGroup = new VBox(4, new Label("Download folder"), pathRow);
+        pathGroup.getStyleClass().add("field-group");
 
         HBox actionRow = new HBox(10, downloadButton, stopButton, verboseCheckBox, progressIndicator);
-        actionRow.setStyle("-fx-alignment: center-left;");
+        actionRow.getStyleClass().add("action-row");
 
         VBox preview = new VBox(8, previewTitleLabel, thumbnailView);
+        preview.getStyleClass().add("preview-panel");
 
         VBox form = new VBox(
                 10,
-                new Label("URL"),
-                urlRow,
-                new Label("Download folder"),
-                pathRow,
+                urlGroup,
+                pathGroup,
                 actionRow,
                 statusLabel,
                 preview,
                 outputArea
         );
         form.setPadding(new Insets(16));
+        form.getStyleClass().add("content-panel");
 
         Downloader downloader = new Downloader(
                 stage,
@@ -81,10 +100,19 @@ public class DownloaderScene {
                 preview,
                 outputArea,
                 progressIndicator,
-                thumbnailView
+                thumbnailView,
+                settingsService
         );
         downloader.initialize();
 
-        return new Scene(form);
+        BorderPane shell = navigationService != null
+                ? navigationService.createDownloaderShell(stage, form)
+                : new BorderPane(form);
+
+        if (navigationService != null) {
+            navigationService.bindDownloadInProgress(() -> downloader.downloadInProgressProperty().get());
+        }
+
+        return new Scene(shell);
     }
 }

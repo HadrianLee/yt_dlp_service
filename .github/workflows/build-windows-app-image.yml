@@ -1,0 +1,53 @@
+name: Build Windows App Image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build jpackage app image
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compile and copy runtime dependencies
+        run: >
+          mvn -B clean compile dependency:copy-dependencies
+          -DincludeScope=runtime
+          -DoutputDirectory=target/dependency
+
+      - name: Build app image
+        run: >
+          jpackage
+          --type app-image
+          --name YtDlpService
+          --dest target\jpackage
+          --module-path "target\classes;target\dependency"
+          --module hhlhh/hhlhh.App
+          --app-version 1.0.1
+          --add-modules javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec
+
+      - name: Upload app image
+        uses: actions/upload-artifact@v4
+        with:
+          name: YtDlpService-windows-app-image
+          path: app/target/jpackage/YtDlpService

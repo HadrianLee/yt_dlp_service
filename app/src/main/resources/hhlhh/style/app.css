@@ -1,0 +1,219 @@
+.root {
+    -app-bg: #f3f4f6;
+    -app-panel: #fafbfc;
+    -app-text: #3f4954;
+    -app-text-strong: #1f2933;
+    -app-border: #d8dee4;
+    -app-border-soft: #e9edf1;
+    -app-accent: #2563eb;
+    -app-accent-soft: #dbeafe;
+    -app-danger: #d14343;
+
+    -fx-background-color: -app-bg;
+    -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: -app-text;
+}
+
+.dark {
+    -app-bg: #0d1117;
+    -app-panel: #161b22;
+    -app-text: #8b949e;
+    -app-text-strong: #f0f6fc;
+    -app-border: #30363d;
+    -app-border-soft: #21262d;
+    -app-accent: #58a6ff;
+    -app-accent-soft: #0d2847;
+    -app-danger: #ff7b72;
+}
+
+.label,
+.check-box {
+    -fx-text-fill: -app-text;
+}
+
+.page-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -app-text-strong;
+}
+
+.section-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -app-accent;
+    -fx-padding: 0 0 6 0;
+}
+
+.muted-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: -app-text;
+}
+
+.greyed-text {
+    -fx-text-fill: derive(-app-text, 20%);
+    -fx-opacity: 0.72;
+}
+
+.greyed-button {
+    -fx-text-fill: derive(-app-text, 10%);
+    -fx-background-color: -app-bg;
+    -fx-border-color: -app-border-soft;
+    -fx-opacity: 0.72;
+}
+
+.greyed-button:hover {
+    -fx-background-color: -app-bg;
+}
+
+.app-shell {
+    -fx-background-color: -app-bg;
+}
+
+.top-bar {
+    -fx-alignment: center-left;
+    -fx-padding: 10 14;
+    -fx-spacing: 10;
+    -fx-background-color: -app-panel;
+    -fx-border-color: transparent transparent -app-border-soft transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.navigation-drawer {
+    -fx-pref-width: 190px;
+    -fx-padding: 16;
+    -fx-background-color: -app-panel;
+    -fx-border-color: transparent -app-border-soft transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+
+.content-panel,
+.settings-panel {
+    -fx-background-color: -app-panel;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(27, 31, 36, 0.08), 24, 0.18, 0, 10);
+}
+
+.content-panel {
+    -fx-padding: 16;
+    -fx-background-insets: 16;
+    -fx-border-insets: 16;
+}
+
+.settings-panel {
+    -fx-padding: 22;
+    -fx-background-insets: 16;
+    -fx-border-insets: 16;
+}
+
+.settings-group {
+    -fx-padding: 14;
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border-soft;
+    -fx-border-radius: 8;
+}
+
+.field-group {
+    -fx-spacing: 4;
+}
+
+.preview-panel {
+    -fx-padding: 12;
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border-soft;
+    -fx-border-radius: 8;
+}
+
+.action-row {
+    -fx-alignment: center-left;
+}
+
+.button {
+    -fx-min-height: 32px;
+    -fx-padding: 6 12;
+    -fx-background-color: -app-panel;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 8;
+    -fx-text-fill: -app-text-strong;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: -app-bg;
+}
+
+.button:armed {
+    -fx-background-color: -app-accent-soft;
+    -fx-border-color: -app-accent;
+}
+
+.button:disabled,
+.check-box:disabled {
+    -fx-opacity: 0.55;
+}
+
+.icon-button {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-padding: 5 0;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.hamburger-button {
+    -fx-text-fill: -app-accent;
+}
+
+.nav-button {
+    -fx-alignment: center-left;
+    -fx-pref-height: 34px;
+}
+
+.text-field,
+.text-area {
+    -fx-background-color: -app-panel;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 8;
+    -fx-text-fill: -app-text-strong;
+    -fx-prompt-text-fill: -app-text;
+    -fx-highlight-fill: -app-accent-soft;
+    -fx-highlight-text-fill: -app-text-strong;
+}
+
+.text-area .content {
+    -fx-background-color: -app-panel;
+    -fx-background-radius: 8;
+}
+
+.scroll-pane {
+    -fx-background: -app-panel;
+    -fx-background-color: -app-panel;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 8;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: -app-panel;
+}
+
+.progress-indicator {
+    -fx-progress-color: -app-accent;
+}
+
+.check-box .box {
+    -fx-background-color: -app-panel;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: -app-accent;
+}

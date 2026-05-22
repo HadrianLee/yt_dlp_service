@@ -10,6 +10,8 @@ import javafx.stage.Stage;
 
 import hhlhh.model.ConsentFormService;
 import hhlhh.model.DependencyManager;
+import hhlhh.model.NavigationService;
+import hhlhh.model.SettingsService;
 import hhlhh.scene.ConsentFormScene;
 import hhlhh.scene.DownloaderScene;
 
@@ -17,6 +19,9 @@ public class App extends Application {
 
     private static final double WINDOW_WIDTH = 840;
     private static final double WINDOW_HEIGHT = 540;
+    private static final String APP_STYLESHEET = "/hhlhh/style/app.css";
+
+    private final SettingsService settingsService = new SettingsService();
 
     @Override
     public void start(Stage primaryStage) {
@@ -54,7 +59,8 @@ public class App extends Application {
         // UI Updates upon thread resolution states
         initTask.setOnSucceeded(e -> {
             statusLabel.setText("Ready! Launching Downloader App Interface...");
-            setAppScene(primaryStage, new DownloaderScene().create(primaryStage));
+            NavigationService navigationService = new NavigationService(settingsService);
+            setAppScene(primaryStage, new DownloaderScene(settingsService, navigationService).create(primaryStage));
         });
 
         initTask.setOnFailed(e -> {
@@ -70,6 +76,7 @@ public class App extends Application {
     }
 
     private void setAppScene(Stage stage, Scene scene) {
+        applyStyles(scene);
         stage.setScene(scene);
         applyWindowSize(stage);
     }
@@ -77,5 +84,26 @@ public class App extends Application {
     private void applyWindowSize(Stage stage) {
         stage.setWidth(WINDOW_WIDTH);
         stage.setHeight(WINDOW_HEIGHT);
+    }
+
+    private void applyStyles(Scene scene) {
+        var stylesheet = App.class.getResource(APP_STYLESHEET);
+        if (stylesheet != null) {
+            scene.getStylesheets().add(stylesheet.toExternalForm());
+        }
+        setDarkModeClass(scene, settingsService.isDarkMode());
+        settingsService.darkModeProperty().addListener(
+                (observable, oldValue, darkMode) -> setDarkModeClass(scene, darkMode)
+        );
+    }
+
+    private void setDarkModeClass(Scene scene, boolean darkMode) {
+        if (darkMode) {
+            if (!scene.getRoot().getStyleClass().contains("dark")) {
+                scene.getRoot().getStyleClass().add("dark");
+            }
+        } else {
+            scene.getRoot().getStyleClass().remove("dark");
+        }
     }
 }
