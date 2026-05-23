@@ -123,7 +123,7 @@ public class DependencyManager {
     }
 
 
-        public void ensureDependenciesExist() throws Exception {
+    public void ensureDependenciesExist() throws Exception {
         OS currentOS = detectOS();
         if (currentOS == OS.UNSUPPORTED) {
             throw new IllegalStateException("Unsupported Operating System Platform.");
@@ -156,6 +156,14 @@ public class DependencyManager {
             ffmpegFile.toFile().setExecutable(true);
         }
         System.out.println("All external dependency environments compiled and verified.");
+    }
+
+    public void repairDependencies() throws Exception {
+        Path binDirectory = Path.of(getBinDirectoryPath());
+        Files.createDirectories(binDirectory);
+        Files.deleteIfExists(binDirectory.resolve(getYtDlpBinaryName()));
+        Files.deleteIfExists(binDirectory.resolve(getFmpegbinaryName()));
+        ensureDependenciesExist();
     }
 
     public String getBinDirectoryPath() {

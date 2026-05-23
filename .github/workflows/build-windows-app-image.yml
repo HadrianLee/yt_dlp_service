@@ -52,6 +52,7 @@ jobs:
           --module hhlhh/hhlhh.App
           --app-version $env:APP_VERSION
           --add-modules javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec
+          --vendor "HHLHH"
 
       - name: Zip app image
         run: Compress-Archive -Path target\jpackage\YtDlpService -DestinationPath target\jpackage\YtDlpService.zip -Force

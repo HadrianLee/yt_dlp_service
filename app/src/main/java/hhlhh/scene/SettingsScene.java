@@ -6,6 +6,7 @@ import hhlhh.model.SettingsService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -25,6 +26,12 @@ public class SettingsScene {
 
     @FXML
     private Label traySupportLabel;
+
+    @FXML
+    private Button repairDependenciesButton;
+
+    @FXML
+    private Label dependencyRepairStatusLabel;
 
     public SettingsScene(SettingsService settingsService) {
         this.settingsService = settingsService;
@@ -51,6 +58,7 @@ public class SettingsScene {
         traySupportLabel.setText(traySupported
                 ? "When a download is active, closing the window hides the app to the tray."
                 : "System tray is not available on this device.");
+        settingsService.bindDependencyRepairControls(repairDependenciesButton, dependencyRepairStatusLabel);
     }
 
     private Parent createFallback() {
@@ -61,7 +69,14 @@ public class SettingsScene {
         closeToTray.setDisable(!settingsService.isTraySupported());
         CheckBox notifications = new CheckBox("Notify when complete");
         notifications.selectedProperty().bindBidirectional(settingsService.notificationsEnabledProperty());
-        VBox fallback = new VBox(12, darkMode, closeToTray, notifications);
+        Button repairDependencies = new Button("Repair dependencies");
+        repairDependencies.getStyleClass().add("repair-button");
+        Label repairStatus = new Label();
+        repairStatus.getStyleClass().add("dependency-status");
+        repairStatus.setWrapText(true);
+        settingsService.bindDependencyRepairControls(repairDependencies, repairStatus);
+
+        VBox fallback = new VBox(12, darkMode, closeToTray, notifications, repairDependencies, repairStatus);
         fallback.getStyleClass().addAll("content-panel", "settings-panel");
         return fallback;
     }

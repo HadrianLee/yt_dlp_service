@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Properties;
 
 import javafx.application.Platform;
@@ -21,6 +22,9 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Task;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 public class SettingsService {
@@ -34,17 +38,23 @@ public class SettingsService {
     private final BooleanProperty closeToTrayDuringDownload = new SimpleBooleanProperty(true);
     private final BooleanProperty notificationsEnabled = new SimpleBooleanProperty(true);
     private final ReadOnlyBooleanWrapper traySupported = new ReadOnlyBooleanWrapper(SystemTray.isSupported());
+    private final DependencyManager dependencyManager;
 
     private TrayIcon trayIcon;
     private Stage attachedStage;
     private Runnable exitAction = Platform::exit;
 
     public SettingsService() {
-        this(AppPaths.appDirectory().resolve("settings.properties"));
+        this(AppPaths.appDirectory().resolve("settings.properties"), new DependencyManager());
     }
 
     SettingsService(Path settingsPath) {
+        this(settingsPath, new DependencyManager());
+    }
+
+    SettingsService(Path settingsPath, DependencyManager dependencyManager) {
         this.settingsPath = settingsPath;
+        this.dependencyManager = Objects.requireNonNull(dependencyManager);
         load();
         if (!isTraySupported()) {
             closeToTrayDuringDownload.set(false);
@@ -94,6 +104,19 @@ public class SettingsService {
 
     public boolean isTraySupported() {
         return traySupported.get();
+    }
+
+    public String getDependencyDirectoryPath() {
+        return dependencyManager.getBinDirectoryPath();
+    }
+
+    public void repairDependencies() throws Exception {
+        dependencyManager.repairDependencies();
+    }
+
+    public void bindDependencyRepairControls(Button button, Label statusLabel) {
+        statusLabel.setText("Dependencies install to " + getDependencyDirectoryPath());
+        button.setOnAction(event -> repairDependencies(button, statusLabel));
     }
 
     public void attachStage(Stage stage) {
@@ -195,6 +218,38 @@ public class SettingsService {
 
     private void addPersistenceListener(BooleanProperty property) {
         property.addListener((observable, oldValue, newValue) -> save());
+    }
+
+    private void repairDependencies(Button button, Label statusLabel) {
+        Task<Void> repairTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                repairDependencies();
+                return null;
+            }
+        };
+
+        button.disableProperty().bind(repairTask.runningProperty());
+        statusLabel.setText("Repairing dependencies...");
+
+        repairTask.setOnSucceeded(event -> {
+            button.disableProperty().unbind();
+            button.setDisable(false);
+            statusLabel.setText("Dependencies repaired.");
+        });
+        repairTask.setOnFailed(event -> {
+            button.disableProperty().unbind();
+            button.setDisable(false);
+            Throwable exception = repairTask.getException();
+            String message = exception != null && exception.getMessage() != null
+                    ? exception.getMessage()
+                    : "Unknown error";
+            statusLabel.setText("Dependency repair failed: " + message);
+        });
+
+        Thread thread = new Thread(repairTask, "dependency-repair");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void load() {

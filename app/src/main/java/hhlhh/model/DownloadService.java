@@ -26,6 +26,7 @@ public class DownloadService {
     );
     private static final Pattern THUMBNAILS_URL_PATTERN = Pattern.compile("\"url\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern TITLE_PATTERN = Pattern.compile("\"title\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"");
+    private static final int SAFE_FOLDER_NAME_LIMIT = 40;
 
     private final DependencyManager dependencyManager;
     private final LogService logService;
@@ -182,25 +183,81 @@ public class DownloadService {
             safeTitle = "playlist";
         }
 
-        safeTitle = safeTitle.replaceAll("[^A-Za-z0-9._-]+", "_")
-                .replaceAll("_+", "_")
+        safeTitle = toReadableFileName(safeTitle)
                 .replaceAll("^[._-]+|[._-]+$", "");
 
         if (safeTitle.isBlank()) {
             return "playlist";
         }
 
-        return safeTitle.length() > 30 ? safeTitle.substring(0, 20) : safeTitle;
+        safeTitle = limitCodePoints(safeTitle, SAFE_FOLDER_NAME_LIMIT)
+                .replaceAll("[^\\p{L}\\p{N}]+$", "");
+        return safeTitle.isBlank() ? "playlist" : safeTitle;
+    }
+
+    private String toReadableFileName(String value) {
+        StringBuilder builder = new StringBuilder();
+        for (int offset = 0; offset < value.length();) {
+            int codePoint = value.codePointAt(offset);
+            if (Character.isLetterOrDigit(codePoint)
+                    || codePoint == '.'
+                    || codePoint == '_'
+                    || codePoint == '-') {
+                builder.appendCodePoint(codePoint);
+            } else {
+                builder.append('_');
+            }
+            offset += Character.charCount(codePoint);
+        }
+
+        return builder.toString().replaceAll("_+", "_");
+    }
+
+    private String limitCodePoints(String value, int limit) {
+        if (value.codePointCount(0, value.length()) <= limit) {
+            return value;
+        }
+
+        int endIndex = value.offsetByCodePoints(0, limit);
+        return value.substring(0, endIndex);
     }
 
     String unescapeJsonString(String value) {
-        return value.replace("\\\"", "\"")
-                .replace("\\\\", "\\")
-                .replace("\\/", "/")
-                .replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t")
-                .replace("\\u0026", "&");
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char current = value.charAt(i);
+            if (current != '\\' || i + 1 >= value.length()) {
+                builder.append(current);
+                continue;
+            }
+
+            char escaped = value.charAt(++i);
+            switch (escaped) {
+                case '"' -> builder.append('"');
+                case '\\' -> builder.append('\\');
+                case '/' -> builder.append('/');
+                case 'b' -> builder.append('\b');
+                case 'f' -> builder.append('\f');
+                case 'n' -> builder.append('\n');
+                case 'r' -> builder.append('\r');
+                case 't' -> builder.append('\t');
+                case 'u' -> {
+                    if (i + 4 < value.length()) {
+                        String hex = value.substring(i + 1, i + 5);
+                        try {
+                            builder.append((char) Integer.parseInt(hex, 16));
+                            i += 4;
+                        } catch (NumberFormatException e) {
+                            builder.append("\\u");
+                        }
+                    } else {
+                        builder.append("\\u");
+                    }
+                }
+                default -> builder.append(escaped);
+            }
+        }
+        return builder.toString();
     }
 
     List<String> buildCommand(

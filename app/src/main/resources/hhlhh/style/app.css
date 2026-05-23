@@ -153,6 +153,21 @@
     -fx-border-color: -app-accent;
 }
 
+.repair-button {
+    -fx-background-color: -app-accent;
+    -fx-border-color: -app-accent;
+    -fx-text-fill: white;
+}
+
+.repair-button:hover {
+    -fx-background-color: derive(-app-accent, -8%);
+}
+
+.dependency-status {
+    -fx-font-size: 12px;
+    -fx-text-fill: -app-text;
+}
+
 .button:disabled,
 .check-box:disabled {
     -fx-opacity: 0.55;

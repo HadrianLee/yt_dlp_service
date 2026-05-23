@@ -25,6 +25,8 @@ import javafx.stage.Stage;
 
 public class Downloader {
 
+    private static final int DISPLAY_NAME_LIMIT = 40;
+
     private final Stage owner;
     private final DownloadService downloadService;
     private final SettingsService settingsService;
@@ -387,18 +389,44 @@ public class Downloader {
             safeTitle = "Untitled";
         }
 
-        safeTitle = safeTitle.replaceAll("[^A-Za-z0-9._-]+", "_")
-                .replaceAll("_+", "_")
+        safeTitle = toReadableFileName(safeTitle)
                 .replaceAll("^[._-]+|[._-]+$", "");
 
         if (safeTitle.isBlank()) {
             safeTitle = "Untitled";
         }
 
-        safeTitle = safeTitle.length() > 30 ? safeTitle.substring(0, 30) : safeTitle;
-        safeTitle = safeTitle.replaceAll("[^A-Za-z0-9]+$", "");
+        safeTitle = limitCodePoints(safeTitle, DISPLAY_NAME_LIMIT)
+                .replaceAll("[^\\p{L}\\p{N}]+$", "");
 
         return safeTitle.isBlank() ? "Untitled" : safeTitle;
+    }
+
+    private String toReadableFileName(String value) {
+        StringBuilder builder = new StringBuilder();
+        for (int offset = 0; offset < value.length();) {
+            int codePoint = value.codePointAt(offset);
+            if (Character.isLetterOrDigit(codePoint)
+                    || codePoint == '.'
+                    || codePoint == '_'
+                    || codePoint == '-') {
+                builder.appendCodePoint(codePoint);
+            } else {
+                builder.append('_');
+            }
+            offset += Character.charCount(codePoint);
+        }
+
+        return builder.toString().replaceAll("_+", "_");
+    }
+
+    private String limitCodePoints(String value, int limit) {
+        if (value.codePointCount(0, value.length()) <= limit) {
+            return value;
+        }
+
+        int endIndex = value.offsetByCodePoints(0, limit);
+        return value.substring(0, endIndex);
     }
 
     long countFiles(Path directory) {

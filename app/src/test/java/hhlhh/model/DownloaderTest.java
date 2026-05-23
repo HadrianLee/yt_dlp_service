@@ -66,9 +66,11 @@ class DownloaderTest {
     void toDisplayNameTruncatesAndRemovesTrailingUnsafeCharacters() {
         String longToken = UUID.randomUUID().toString();
         String shortToken = UUID.randomUUID().toString().substring(0, 8);
+        String longTitle = longToken + "-extra-text";
 
-        assertEquals(longToken.substring(0, 30), downloader.toDisplayName(longToken + "-extra-text"));
+        assertEquals(longTitle.substring(0, 40), downloader.toDisplayName(longTitle));
         assertEquals(shortToken, downloader.toDisplayName(shortToken + "!!!"));
+        assertEquals("日本語タイトル_" + shortToken, downloader.toDisplayName("日本語タイトル " + shortToken));
     }
 
     @Test

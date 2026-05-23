@@ -2,8 +2,14 @@ package hhlhh.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import hhlhh.test.fake.FakeDependencyManager;
 
 class DependencyManagerTest {
 
@@ -37,5 +43,18 @@ class DependencyManagerTest {
         DependencyManager dependencyManager = new DependencyManager();
 
         assertEquals(AppPaths.binDirectory().toAbsolutePath().toString(), dependencyManager.getBinDirectoryPath());
+    }
+
+    @Test
+    void repairDependenciesRecreatesManagedBinaries(@TempDir Path tempDir) throws Exception {
+        FakeDependencyManager dependencyManager = new FakeDependencyManager(tempDir);
+        dependencyManager.ensureDependenciesExist();
+        Files.writeString(dependencyManager.ytDlpPath(), "stale yt-dlp");
+        Files.writeString(dependencyManager.ffmpegPath(), "stale ffmpeg");
+
+        dependencyManager.repairDependencies();
+
+        assertEquals("fake binary", Files.readString(dependencyManager.ytDlpPath()));
+        assertEquals("fake binary", Files.readString(dependencyManager.ffmpegPath()));
     }
 }

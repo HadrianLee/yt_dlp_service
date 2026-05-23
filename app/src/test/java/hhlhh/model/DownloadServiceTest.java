@@ -65,6 +65,26 @@ class DownloadServiceTest {
     }
 
     @Test
+    void inspectUrlDecodesUnicodeEscapedTitle() throws Exception {
+        TestDownloadService service = new TestDownloadService(new FakeDependencyManager(tempDir), new LogService());
+        service.outputLines = List.of("""
+                {"title":"\\u65e5\\u672c\\u8a9e\\u30bf\\u30a4\\u30c8\\u30eb \\u0026 Mix"}
+                """);
+
+        DownloadService.UrlInspection inspection = service.inspectUrl("https://youtu.be/" + UUID.randomUUID());
+
+        assertFalse(inspection.playlist());
+        assertEquals("\u65e5\u672c\u8a9e\u30bf\u30a4\u30c8\u30eb & Mix", inspection.title());
+    }
+
+    @Test
+    void unescapeJsonStringDecodesCommonEscapes() {
+        DownloadService service = new DownloadService(new FakeDependencyManager(tempDir), new LogService());
+
+        assertEquals("A/B \"C\"\nD", service.unescapeJsonString("A\\/B \\\"C\\\"\\nD"));
+    }
+
+    @Test
     void downloadPlaylistRejectsBlankUrlBeforeCreatingOutputDirectory() {
         DownloadService service = new DownloadService(new FakeDependencyManager(tempDir), new LogService());
         Path outputDirectory = tempDir.resolve("output");
@@ -134,10 +154,16 @@ class DownloadServiceTest {
         DownloadService service = new DownloadService(new FakeDependencyManager(tempDir), new LogService());
         String shortToken = UUID.randomUUID().toString().substring(0, 8);
         String longToken = UUID.randomUUID().toString();
+        String longTitle = longToken + "-extra-text";
 
         assertEquals("playlist", service.toSafeFolderName(" ?! "));
         assertEquals("A_" + shortToken, service.toSafeFolderName(" A @ " + shortToken));
-        assertEquals(longToken.substring(0, 20), service.toSafeFolderName(longToken + "-extra-text"));
+        assertEquals(longTitle.substring(0, 40), service.toSafeFolderName(longTitle));
+        assertEquals(
+                "\u65e5\u672c\u8a9e\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8_" + shortToken,
+                service.toSafeFolderName("\u65e5\u672c\u8a9e\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8 " + shortToken)
+        );
+        assertEquals("日本語プレイリスト_" + shortToken, service.toSafeFolderName("日本語プレイリスト " + shortToken));
     }
 
     private static class TestDownloadService extends DownloadService {
