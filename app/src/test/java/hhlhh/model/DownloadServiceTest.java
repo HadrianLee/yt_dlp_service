@@ -150,6 +150,42 @@ class DownloadServiceTest {
     }
 
     @Test
+    void downloadPlaylistAddsPostprocessPipelineFlagWhenEnabled() throws Exception {
+        TestDownloadService service = new TestDownloadService(
+                new FakeDependencyManager(tempDir),
+                new LogService(),
+                () -> true
+        );
+        Path outputDirectory = tempDir.resolve("downloads-" + UUID.randomUUID());
+
+        service.downloadPlaylist(
+                "https://youtu.be/" + UUID.randomUUID(),
+                outputDirectory,
+                false,
+                false,
+                line -> { }
+        );
+
+        assertTrue(service.lastCommand.contains("--use-postprocess-pipeline"));
+    }
+
+    @Test
+    void downloadPlaylistOmitsPostprocessPipelineFlagByDefault() throws Exception {
+        TestDownloadService service = new TestDownloadService(new FakeDependencyManager(tempDir), new LogService());
+        Path outputDirectory = tempDir.resolve("downloads-" + UUID.randomUUID());
+
+        service.downloadPlaylist(
+                "https://youtu.be/" + UUID.randomUUID(),
+                outputDirectory,
+                false,
+                false,
+                line -> { }
+        );
+
+        assertFalse(service.lastCommand.contains("--use-postprocess-pipeline"));
+    }
+
+    @Test
     void safeFolderNameFallsBackAndTruncates() {
         DownloadService service = new DownloadService(new FakeDependencyManager(tempDir), new LogService());
         String shortToken = UUID.randomUUID().toString().substring(0, 8);
@@ -173,6 +209,14 @@ class DownloadServiceTest {
 
         TestDownloadService(DependencyManager dependencyManager, LogService logService) {
             super(dependencyManager, logService);
+        }
+
+        TestDownloadService(
+                DependencyManager dependencyManager,
+                LogService logService,
+                java.util.function.BooleanSupplier usePostprocessPipeline
+        ) {
+            super(dependencyManager, logService, usePostprocessPipeline);
         }
 
         @Override

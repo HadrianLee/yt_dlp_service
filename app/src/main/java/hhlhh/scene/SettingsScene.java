@@ -25,6 +25,9 @@ public class SettingsScene {
     private CheckBox notificationToggle;
 
     @FXML
+    private CheckBox postprocessPipelineToggle;
+
+    @FXML
     private Label traySupportLabel;
 
     @FXML
@@ -52,6 +55,7 @@ public class SettingsScene {
         darkModeToggle.selectedProperty().bindBidirectional(settingsService.darkModeProperty());
         closeToTrayToggle.selectedProperty().bindBidirectional(settingsService.closeToTrayDuringDownloadProperty());
         notificationToggle.selectedProperty().bindBidirectional(settingsService.notificationsEnabledProperty());
+        settingsService.bindPostprocessPipelineToggle(postprocessPipelineToggle);
 
         boolean traySupported = settingsService.isTraySupported();
         closeToTrayToggle.setDisable(!traySupported);
@@ -69,6 +73,8 @@ public class SettingsScene {
         closeToTray.setDisable(!settingsService.isTraySupported());
         CheckBox notifications = new CheckBox("Notify when complete");
         notifications.selectedProperty().bindBidirectional(settingsService.notificationsEnabledProperty());
+        CheckBox postprocessPipeline = new CheckBox("Use custom postprocess pipeline");
+        settingsService.bindPostprocessPipelineToggle(postprocessPipeline);
         Button repairDependencies = new Button("Repair dependencies");
         repairDependencies.getStyleClass().add("repair-button");
         Label repairStatus = new Label();
@@ -76,7 +82,15 @@ public class SettingsScene {
         repairStatus.setWrapText(true);
         settingsService.bindDependencyRepairControls(repairDependencies, repairStatus);
 
-        VBox fallback = new VBox(12, darkMode, closeToTray, notifications, repairDependencies, repairStatus);
+        VBox fallback = new VBox(
+                12,
+                darkMode,
+                closeToTray,
+                notifications,
+                postprocessPipeline,
+                repairDependencies,
+                repairStatus
+        );
         fallback.getStyleClass().addAll("content-panel", "settings-panel");
         return fallback;
     }

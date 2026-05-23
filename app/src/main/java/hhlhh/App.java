@@ -5,6 +5,7 @@ import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -20,12 +21,14 @@ public class App extends Application {
     private static final double WINDOW_WIDTH = 840;
     private static final double WINDOW_HEIGHT = 540;
     private static final String APP_STYLESHEET = "/hhlhh/style/app.css";
+    private static final String APP_ICON = "/hhlhh/icon/app.png";
 
     private final SettingsService settingsService = new SettingsService();
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Downloader Shell");
+        applyAppIcon(primaryStage);
         applyWindowSize(primaryStage);
 
         ConsentFormService consentFormService = new ConsentFormService();
@@ -84,6 +87,16 @@ public class App extends Application {
     private void applyWindowSize(Stage stage) {
         stage.setWidth(WINDOW_WIDTH);
         stage.setHeight(WINDOW_HEIGHT);
+    }
+
+    private void applyAppIcon(Stage stage) {
+        try (var inputStream = App.class.getResourceAsStream(APP_ICON)) {
+            if (inputStream != null) {
+                stage.getIcons().add(new Image(inputStream));
+            }
+        } catch (Exception e) {
+            // A missing or unreadable icon should not block app startup.
+        }
     }
 
     private void applyStyles(Scene scene) {

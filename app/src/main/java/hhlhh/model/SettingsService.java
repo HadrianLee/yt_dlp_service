@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Properties;
 
+import javax.imageio.ImageIO;
+
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -24,6 +26,7 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
@@ -32,11 +35,14 @@ public class SettingsService {
     private static final String DARK_MODE = "darkMode";
     private static final String CONSUME_EXIT_DURING_DOWNLOAD = "consumeExitDuringDownload";
     private static final String NOTIFICATIONS_ENABLED = "notificationsEnabled";
+    private static final String USE_POSTPROCESS_PIPELINE = "usePostprocessPipeline";
+    private static final String APP_ICON = "/hhlhh/icon/app.png";
 
     private final Path settingsPath;
     private final BooleanProperty darkMode = new SimpleBooleanProperty(false);
     private final BooleanProperty closeToTrayDuringDownload = new SimpleBooleanProperty(true);
     private final BooleanProperty notificationsEnabled = new SimpleBooleanProperty(true);
+    private final BooleanProperty usePostprocessPipeline = new SimpleBooleanProperty(false);
     private final ReadOnlyBooleanWrapper traySupported = new ReadOnlyBooleanWrapper(SystemTray.isSupported());
     private final DependencyManager dependencyManager;
 
@@ -62,6 +68,7 @@ public class SettingsService {
         addPersistenceListener(darkMode);
         addPersistenceListener(closeToTrayDuringDownload);
         addPersistenceListener(notificationsEnabled);
+        addPersistenceListener(usePostprocessPipeline);
         closeToTrayDuringDownload.addListener((observable, oldValue, enabled) -> {
             if (enabled && !isTraySupported()) {
                 closeToTrayDuringDownload.set(false);
@@ -98,6 +105,14 @@ public class SettingsService {
         return notificationsEnabled.get();
     }
 
+    public BooleanProperty usePostprocessPipelineProperty() {
+        return usePostprocessPipeline;
+    }
+
+    public boolean shouldUsePostprocessPipeline() {
+        return usePostprocessPipeline.get();
+    }
+
     public ReadOnlyBooleanProperty traySupportedProperty() {
         return traySupported.getReadOnlyProperty();
     }
@@ -117,6 +132,10 @@ public class SettingsService {
     public void bindDependencyRepairControls(Button button, Label statusLabel) {
         statusLabel.setText("Dependencies install to " + getDependencyDirectoryPath());
         button.setOnAction(event -> repairDependencies(button, statusLabel));
+    }
+
+    public void bindPostprocessPipelineToggle(CheckBox checkBox) {
+        checkBox.selectedProperty().bindBidirectional(usePostprocessPipeline);
     }
 
     public void attachStage(Stage stage) {
@@ -193,6 +212,17 @@ public class SettingsService {
     }
 
     private Image createTrayImage() {
+        try (InputStream inputStream = SettingsService.class.getResourceAsStream(APP_ICON)) {
+            if (inputStream != null) {
+                BufferedImage icon = ImageIO.read(inputStream);
+                if (icon != null) {
+                    return icon;
+                }
+            }
+        } catch (IOException e) {
+            // Fall back to the generated tray image below.
+        }
+
         BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         try {
@@ -269,6 +299,10 @@ public class SettingsService {
                     NOTIFICATIONS_ENABLED,
                     Boolean.toString(notificationsEnabled.get())
             )));
+            usePostprocessPipeline.set(Boolean.parseBoolean(properties.getProperty(
+                    USE_POSTPROCESS_PIPELINE,
+                    Boolean.toString(usePostprocessPipeline.get())
+            )));
         } catch (IOException e) {
             // Keep defaults when settings cannot be read.
         }
@@ -279,6 +313,7 @@ public class SettingsService {
         properties.setProperty(DARK_MODE, Boolean.toString(darkMode.get()));
         properties.setProperty(CONSUME_EXIT_DURING_DOWNLOAD, Boolean.toString(closeToTrayDuringDownload.get()));
         properties.setProperty(NOTIFICATIONS_ENABLED, Boolean.toString(notificationsEnabled.get()));
+        properties.setProperty(USE_POSTPROCESS_PIPELINE, Boolean.toString(usePostprocessPipeline.get()));
 
         try {
             Files.createDirectories(settingsPath.getParent());

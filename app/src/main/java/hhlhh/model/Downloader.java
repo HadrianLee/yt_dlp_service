@@ -103,8 +103,12 @@ public class Downloader {
             SettingsService settingsService
     ) {
         this.owner = owner;
-        this.downloadService = new DownloadService();
         this.settingsService = settingsService;
+        this.downloadService = new DownloadService(
+                new DependencyManager(),
+                new LogService(),
+                () -> this.settingsService != null && this.settingsService.shouldUsePostprocessPipeline()
+        );
         this.defaultDownloadPath = resolveDefaultDownloadPath();
         this.urlField = urlField;
         this.pathField = pathField;

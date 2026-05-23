@@ -16,9 +16,9 @@ public class DependencyManager {
 
     // Public APIs for fetching upstream builds
     private static final String YTDLP_WINDOWS_URL =
-            "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe";
+            "https://github.com/HadrianLee/yt-dlp/releases/download/2026.05.23.121724/yt-dlp.exe";
     private static final String YTDLP_LINUX_URL =
-            "https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp";
+            "https://github.com/HadrianLee/yt-dlp/releases/download/2026.05.23.121724/yt-dlp";
     private static final String FFMPEG_WINDOWS_64_URL =
             "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
     private static final String FFMPEG_LINUX_64_URL =

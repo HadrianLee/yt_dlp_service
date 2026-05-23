@@ -42,12 +42,40 @@ jobs:
           -DincludeScope=runtime
           -DoutputDirectory=target/dependency
 
+      - name: Create Windows app icon
+        run: |
+          $pngPath = "src\main\resources\hhlhh\icon\app.png"
+          $icoPath = "target\jpackage\app.ico"
+          New-Item -ItemType Directory -Force -Path (Split-Path $icoPath) | Out-Null
+
+          $pngBytes = [System.IO.File]::ReadAllBytes($pngPath)
+          $stream = [System.IO.File]::Create($icoPath)
+          $writer = New-Object System.IO.BinaryWriter($stream)
+          try {
+            $writer.Write([UInt16]0)
+            $writer.Write([UInt16]1)
+            $writer.Write([UInt16]1)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([UInt16]1)
+            $writer.Write([UInt16]32)
+            $writer.Write([UInt32]$pngBytes.Length)
+            $writer.Write([UInt32]22)
+            $writer.Write($pngBytes)
+          } finally {
+            $writer.Dispose()
+            $stream.Dispose()
+          }
+
       - name: Build app image
         run: >
           jpackage
           --type app-image
           --name YtDlpService
           --dest target\jpackage
+          --icon target\jpackage\app.ico
           --module-path "target\classes;target\dependency"
           --module hhlhh/hhlhh.App
           --app-version $env:APP_VERSION

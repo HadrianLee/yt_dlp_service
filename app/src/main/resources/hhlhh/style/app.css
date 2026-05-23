@@ -8,6 +8,7 @@
     -app-accent: #2563eb;
     -app-accent-soft: #dbeafe;
     -app-danger: #d14343;
+    -app-repair-bg: #fafbfcc0;
 
     -fx-background-color: -app-bg;
     -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
@@ -25,6 +26,7 @@
     -app-accent: #58a6ff;
     -app-accent-soft: #0d2847;
     -app-danger: #ff7b72;
+    -app-repair-bg: #21262d;
 }
 
 .label,
@@ -154,13 +156,13 @@
 }
 
 .repair-button {
-    -fx-background-color: -app-accent;
-    -fx-border-color: -app-accent;
-    -fx-text-fill: white;
+    -fx-background-color: -app-repair-bg;
+    -fx-border-color: -app-border-soft;
+    -fx-text-fill: -app-danger;
 }
 
 .repair-button:hover {
-    -fx-background-color: derive(-app-accent, -8%);
+    -fx-background-color: derive(-app-repair-bg, -6%);
 }
 
 .dependency-status {

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,16 +31,26 @@ public class DownloadService {
 
     private final DependencyManager dependencyManager;
     private final LogService logService;
+    private final BooleanSupplier usePostprocessPipeline;
     private volatile Process currentProcess;
     private volatile boolean stopRequested;
 
     public DownloadService() {
-        this(new DependencyManager(), new LogService());
+        this(new DependencyManager(), new LogService(), () -> false);
     }
 
     public DownloadService(DependencyManager dependencyManager, LogService logService) {
+        this(dependencyManager, logService, () -> false);
+    }
+
+    public DownloadService(
+            DependencyManager dependencyManager,
+            LogService logService,
+            BooleanSupplier usePostprocessPipeline
+    ) {
         this.dependencyManager = Objects.requireNonNull(dependencyManager);
         this.logService = Objects.requireNonNull(logService);
+        this.usePostprocessPipeline = usePostprocessPipeline != null ? usePostprocessPipeline : () -> false;
     }
 
     public DownloadResult downloadPlaylist(String url, Path outputDirectory, boolean verbose) throws Exception {
@@ -279,6 +290,9 @@ public class DownloadService {
         command.add("--write-thumbnail");
         command.add("--embed-thumbnail");
         command.add("--add-metadata");
+        if (usePostprocessPipeline.getAsBoolean()) {
+            command.add("--use-postprocess-pipeline");
+        }
         command.add("--ffmpeg-location");
         command.add(ffmpegDirectory.toString());
         command.add("--output");

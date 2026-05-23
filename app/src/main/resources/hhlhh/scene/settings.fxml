@@ -18,6 +18,7 @@
                 <CheckBox fx:id="closeToTrayToggle" text="Close to tray while downloading" />
                 <Label fx:id="traySupportLabel" styleClass="muted-text" wrapText="true" />
                 <CheckBox fx:id="notificationToggle" text="Notify when complete" />
+                <CheckBox fx:id="postprocessPipelineToggle" text="Use custom postprocess pipeline" />
                 <Button fx:id="repairDependenciesButton"
                         text="Repair dependencies"
                         styleClass="repair-button" />
