@@ -3,15 +3,15 @@ name: Release
 on:
   workflow_call:
     inputs:
-      ref:
-        required: false
-        default: "main"
-        type: string
-      version:
+      source:
         required: false
         default: ""
         type: string
-      tag:
+      target:
+        required: false
+        default: ""
+        type: string
+      version:
         required: false
         default: ""
         type: string
@@ -34,23 +34,31 @@ on:
 
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Branch, tag, or SHA to release"
-        required: true
-        default: "main"
+      source:
+        description: |
+          SOURCE of this release's updates:
+          branch, tag, SHA, or repo@ref
+          (default: <current_ref>)
+        required: false
+        default: ''
+        type: string
+      target:
+        description: |
+          TARGET to publish this release to:
+          tag or channel@tag
+          (default: v<version>)
+        required: false
+        default: ''
         type: string
       version:
-        description: "Release/app version, for example 1.0.14. Defaults to 1.0.<run_number>."
+        description: |
+          VERSION: major.minor.patch
+          (default: auto-generated)
         required: false
-        default: ""
-        type: string
-      tag:
-        description: "Release tag. Defaults to v<version>."
-        required: false
-        default: ""
+        default: ''
         type: string
       prerelease:
-        description: "Mark as a pre-release"
+        description: Pre-release
         default: false
         type: boolean
       windows:
@@ -75,21 +83,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app_version: ${{ steps.process_inputs.outputs.app_version }}
-      tag: ${{ steps.process_inputs.outputs.tag }}
+      source_ref: ${{ steps.process_inputs.outputs.source_ref }}
+      release_tag: ${{ steps.process_inputs.outputs.release_tag }}
       head_sha: ${{ steps.get_target.outputs.head_sha }}
 
     steps:
-      - name: Checkout release ref
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
-
       - name: Process inputs
         id: process_inputs
         env:
+          INPUT_SOURCE: ${{ inputs.source }}
+          INPUT_TARGET: ${{ inputs.target }}
           INPUT_VERSION: ${{ inputs.version }}
-          INPUT_TAG: ${{ inputs.tag }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         shell: python
         run: |
@@ -100,10 +105,22 @@ jobs:
           if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){0,2}", app_version):
               raise SystemExit("version must contain one to three numeric dot-separated parts, for example 1.0.14")
 
-          tag = os.environ["INPUT_TAG"] or f"v{app_version}"
+          source = os.environ["INPUT_SOURCE"] or os.environ["GITHUB_REF_NAME"]
+          source_ref = source.rsplit("@", 1)[-1]
+
+          target = os.environ["INPUT_TARGET"]
+          release_tag = target.rsplit("@", 1)[-1] if target else f"v{app_version}"
+
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               output.write(f"app_version={app_version}\n")
-              output.write(f"tag={tag}\n")
+              output.write(f"source_ref={source_ref}\n")
+              output.write(f"release_tag={release_tag}\n")
+
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.process_inputs.outputs.source_ref }}
+          fetch-depth: 0
 
       - name: Get target commit
         id: get_target
@@ -117,7 +134,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/build.yml
     with:
-      ref: ${{ inputs.ref }}
+      ref: ${{ needs.prepare.outputs.source_ref }}
       app_version: ${{ needs.prepare.outputs.app_version }}
       windows: ${{ inputs.windows }}
       macos: ${{ inputs.macos }}
@@ -130,8 +147,8 @@ jobs:
     env:
       APP_VERSION: ${{ needs.prepare.outputs.app_version }}
       HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
-      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-      RELEASE_REF: ${{ inputs.ref }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+      RELEASE_REF: ${{ needs.prepare.outputs.source_ref }}
       GH_TOKEN: ${{ github.token }}
 
     steps:
