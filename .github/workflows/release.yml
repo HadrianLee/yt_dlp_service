@@ -149,6 +149,7 @@ jobs:
       RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
       RELEASE_REF: ${{ needs.prepare.outputs.source_ref }}
       GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
 
     steps:
       - name: Download artifacts
