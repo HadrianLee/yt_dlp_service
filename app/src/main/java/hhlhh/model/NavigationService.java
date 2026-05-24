@@ -14,6 +14,10 @@ import javafx.stage.Stage;
 
 public class NavigationService {
 
+    private static final String EXIT_DIALOG_TITLE = "Download still running";
+    private static final String EXIT_DIALOG_MESSAGE =
+            "A download is still running. Exiting now will stop the app and may leave partial output files.";
+
     private final SettingsService settingsService;
     private BooleanSupplier downloadInProgress = () -> false;
     private BorderPane root;
@@ -39,6 +43,8 @@ public class NavigationService {
 
         settingsService.attachStage(stage);
         settingsService.setExitAction(() -> exitFromTray(stage));
+        settingsService.setOpenDownloadAction(this::showDownloader);
+        settingsService.setOpenSettingsAction(this::showSettings);
         installCloseHandler(stage);
         return root;
     }
@@ -101,6 +107,12 @@ public class NavigationService {
                 event.consume();
                 hideToTray(stage, "Download still running", "The app is still downloading in the system tray.");
                 return;
+            } else if (inProgress) {
+                ExitDialog exitDialog = new ExitDialog(EXIT_DIALOG_TITLE, EXIT_DIALOG_MESSAGE);
+                if (!exitDialog.showAndWait(stage)) {
+                    event.consume();
+                    return;
+                }
             }
 
             settingsService.removeTrayIcon();

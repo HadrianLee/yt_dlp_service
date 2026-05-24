@@ -1,0 +1,283 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        default: ""
+        type: string
+      app_version:
+        required: false
+        default: ""
+        type: string
+      windows:
+        required: false
+        default: true
+        type: boolean
+      macos:
+        required: false
+        default: true
+        type: boolean
+      linux:
+        required: false
+        default: true
+        type: boolean
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA to build"
+        required: false
+        default: "main"
+        type: string
+      app_version:
+        description: "jpackage app version, for example 1.0.14. Defaults to 1.0.<run_number>."
+        required: false
+        default: ""
+        type: string
+      windows:
+        description: "Build Windows app image ZIP"
+        default: true
+        type: boolean
+      macos:
+        description: "Build macOS app image ZIP"
+        default: true
+        type: boolean
+      linux:
+        description: "Build Linux app image ZIP"
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  process:
+    name: Process inputs
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.process_inputs.outputs.app_version }}
+      ref: ${{ steps.process_inputs.outputs.ref }}
+      matrix: ${{ steps.build_matrix.outputs.matrix }}
+
+    steps:
+      - name: Process inputs
+        id: process_inputs
+        env:
+          INPUTS: ${{ toJSON(inputs) }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        shell: python
+        run: |
+          import json
+          import os
+          import re
+
+          inputs = json.loads(os.environ["INPUTS"] or "{}")
+          app_version = inputs.get("app_version") or f"1.0.{os.environ['GITHUB_RUN_NUMBER']}"
+          if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){0,2}", app_version):
+              raise SystemExit("app_version must contain one to three numeric dot-separated parts, for example 1.0.14")
+
+          ref = inputs.get("ref") or os.environ["GITHUB_REF_NAME"]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"app_version={app_version}\n")
+              output.write(f"ref={ref}\n")
+
+      - name: Build matrix
+        id: build_matrix
+        env:
+          INPUTS: ${{ toJSON(inputs) }}
+        shell: python
+        run: |
+          import json
+          import os
+
+          inputs = json.loads(os.environ["INPUTS"] or "{}")
+          targets = [
+              ("windows", "windows-latest", "YtDlpService-windows.zip"),
+              ("macos", "macos-14", "YtDlpService-macos.zip"),
+              ("linux", "ubuntu-latest", "YtDlpService-linux.zip"),
+          ]
+          matrix = [
+              {"id": target_id, "runner": runner, "archive": archive}
+              for target_id, runner, archive in targets
+              if inputs.get(target_id, True)
+          ]
+          if not matrix:
+              raise SystemExit("At least one target must be selected")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"matrix={json.dumps(matrix)}\n")
+
+  build:
+    name: Build ${{ matrix.id }}
+    needs: [process]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.process.outputs.matrix) }}
+
+    defaults:
+      run:
+        working-directory: app
+
+    env:
+      APP_VERSION: ${{ needs.process.outputs.app_version }}
+      ARCHIVE_NAME: ${{ matrix.archive }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.process.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test and copy runtime dependencies
+        run: >
+          mvn -B clean test dependency:copy-dependencies
+          -DincludeScope=runtime
+          -DoutputDirectory=target/dependency
+
+      - name: Create Windows app icon
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PNG_PATH: src\main\resources\hhlhh\icon\app.png
+          ICO_PATH: target\jpackage\app.ico
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path (Split-Path $env:ICO_PATH) | Out-Null
+
+          $pngBytes = [System.IO.File]::ReadAllBytes($env:PNG_PATH)
+          $stream = [System.IO.File]::Create($env:ICO_PATH)
+          $writer = New-Object System.IO.BinaryWriter($stream)
+          try {
+            $writer.Write([UInt16]0)
+            $writer.Write([UInt16]1)
+            $writer.Write([UInt16]1)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([Byte]0)
+            $writer.Write([UInt16]1)
+            $writer.Write([UInt16]32)
+            $writer.Write([UInt32]$pngBytes.Length)
+            $writer.Write([UInt32]22)
+            $writer.Write($pngBytes)
+          } finally {
+            $writer.Dispose()
+            $stream.Dispose()
+          }
+
+      - name: Build app image
+        shell: pwsh
+        env:
+          APP_NAME: YtDlpService
+          APP_MODULE: hhlhh/hhlhh.App
+          APP_VENDOR: HHLHH
+          ICON_PATH: target\jpackage\app.ico
+          LINUX_ICON_PATH: src/main/resources/hhlhh/icon/app.png
+          JPACKAGE_DEST: target/jpackage
+          JPACKAGE_MODULES: javafx.controls,javafx.fxml,java.net.http,java.desktop,jdk.crypto.ec
+          WINDOWS_MODULE_PATH: target\classes;target\dependency
+          UNIX_MODULE_PATH: target/classes:target/dependency
+          IS_WINDOWS: ${{ runner.os == 'Windows' }}
+          IS_LINUX: ${{ runner.os == 'Linux' }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          $modulePath = if ($env:IS_WINDOWS -eq "true") {
+            $env:WINDOWS_MODULE_PATH
+          } else {
+            $env:UNIX_MODULE_PATH
+          }
+
+          $jpackageArgs = @(
+            "--type", "app-image",
+            "--name", $env:APP_NAME,
+            "--dest", $env:JPACKAGE_DEST,
+            "--module-path", $modulePath,
+            "--module", $env:APP_MODULE,
+            "--app-version", $env:APP_VERSION,
+            "--add-modules", $env:JPACKAGE_MODULES,
+            "--vendor", $env:APP_VENDOR
+          )
+
+          if ($env:IS_WINDOWS -eq "true") {
+            $jpackageArgs += @("--icon", $env:ICON_PATH)
+          } elseif ($env:IS_LINUX -eq "true") {
+            $jpackageArgs += @("--icon", $env:LINUX_ICON_PATH)
+          }
+
+          & jpackage @jpackageArgs
+
+      - name: Zip Windows app image
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          APP_IMAGE_PATH: target\jpackage\YtDlpService
+          ARCHIVE_PATH: target\jpackage\${{ matrix.archive }}
+        run: Compress-Archive -Path $env:APP_IMAGE_PATH -DestinationPath $env:ARCHIVE_PATH -Force
+
+      - name: Zip macOS app image
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cd target/jpackage
+          ditto -c -k --sequesterRsrc --keepParent YtDlpService.app "$ARCHIVE_NAME"
+
+      - name: Zip Linux app image
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cd target/jpackage
+          zip -r "$ARCHIVE_NAME" YtDlpService
+
+      - name: Upload app image
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-jpackage-${{ matrix.id }}
+          path: app/target/jpackage/${{ matrix.archive }}
+          if-no-files-found: error
+          compression-level: 0
+
+  meta_files:
+    name: Metadata files
+    needs: [build]
+    if: always() && !failure() && !cancelled()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifact
+          pattern: build-jpackage-*
+          merge-multiple: true
+
+      - name: Make checksum files
+        shell: bash
+        run: |
+          cd artifact
+          sha256sum -- * | tee ../SHA2-256SUMS
+          sha512sum -- * | tee ../SHA2-512SUMS
+
+      - name: Upload metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-meta
+          path: |
+            SHA2-256SUMS
+            SHA2-512SUMS
+          if-no-files-found: error
+          compression-level: 0

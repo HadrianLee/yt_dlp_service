@@ -1,14 +1,5 @@
 package hhlhh.model;
 
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
-import java.awt.TrayIcon;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -17,12 +8,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Properties;
 
-import javax.imageio.ImageIO;
-
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Button;
@@ -36,19 +24,14 @@ public class SettingsService {
     private static final String CONSUME_EXIT_DURING_DOWNLOAD = "consumeExitDuringDownload";
     private static final String NOTIFICATIONS_ENABLED = "notificationsEnabled";
     private static final String USE_POSTPROCESS_PIPELINE = "usePostprocessPipeline";
-    private static final String APP_ICON = "/hhlhh/icon/app.png";
 
     private final Path settingsPath;
     private final BooleanProperty darkMode = new SimpleBooleanProperty(false);
     private final BooleanProperty closeToTrayDuringDownload = new SimpleBooleanProperty(true);
     private final BooleanProperty notificationsEnabled = new SimpleBooleanProperty(true);
     private final BooleanProperty usePostprocessPipeline = new SimpleBooleanProperty(false);
-    private final ReadOnlyBooleanWrapper traySupported = new ReadOnlyBooleanWrapper(SystemTray.isSupported());
     private final DependencyManager dependencyManager;
-
-    private TrayIcon trayIcon;
-    private Stage attachedStage;
-    private Runnable exitAction = Platform::exit;
+    private final SystemTrayService systemTrayService;
 
     public SettingsService() {
         this(AppPaths.appDirectory().resolve("settings.properties"), new DependencyManager());
@@ -59,8 +42,13 @@ public class SettingsService {
     }
 
     SettingsService(Path settingsPath, DependencyManager dependencyManager) {
+        this(settingsPath, dependencyManager, new SystemTrayService());
+    }
+
+    SettingsService(Path settingsPath, DependencyManager dependencyManager, SystemTrayService systemTrayService) {
         this.settingsPath = settingsPath;
         this.dependencyManager = Objects.requireNonNull(dependencyManager);
+        this.systemTrayService = Objects.requireNonNull(systemTrayService);
         load();
         if (!isTraySupported()) {
             closeToTrayDuringDownload.set(false);
@@ -114,11 +102,11 @@ public class SettingsService {
     }
 
     public ReadOnlyBooleanProperty traySupportedProperty() {
-        return traySupported.getReadOnlyProperty();
+        return systemTrayService.traySupportedProperty();
     }
 
     public boolean isTraySupported() {
-        return traySupported.get();
+        return systemTrayService.isTraySupported();
     }
 
     public String getDependencyDirectoryPath() {
@@ -139,111 +127,39 @@ public class SettingsService {
     }
 
     public void attachStage(Stage stage) {
-        attachedStage = stage;
+        systemTrayService.attachStage(stage);
     }
 
     public void setExitAction(Runnable exitAction) {
-        this.exitAction = exitAction != null ? exitAction : Platform::exit;
+        systemTrayService.setExitAction(exitAction != null ? exitAction : Platform::exit);
+    }
+
+    public void setOpenDownloadAction(Runnable openDownloadAction) {
+        systemTrayService.setOpenDownloadAction(openDownloadAction);
+    }
+
+    public void setOpenSettingsAction(Runnable openSettingsAction) {
+        systemTrayService.setOpenSettingsAction(openSettingsAction);
     }
 
     public void showTrayIcon(Stage stage) {
-        if (!isTraySupported()) {
-            return;
-        }
-        attachedStage = stage != null ? stage : attachedStage;
-        ensureTrayIcon();
+        systemTrayService.showTrayIcon(stage);
     }
 
     public void notifyDownloadComplete(String title, String message) {
-        if (!isNotificationsEnabled() || !isTraySupported()) {
+        if (!isNotificationsEnabled()) {
             return;
         }
 
-        ensureTrayIcon();
-        if (trayIcon != null) {
-            trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
-        }
+        systemTrayService.notifyTrayMessage(title, message);
     }
 
     public void notifyTrayMessage(String title, String message) {
-        if (!isTraySupported()) {
-            return;
-        }
-
-        ensureTrayIcon();
-        if (trayIcon != null) {
-            trayIcon.displayMessage(title, message, TrayIcon.MessageType.INFO);
-        }
+        systemTrayService.notifyTrayMessage(title, message);
     }
 
     public void removeTrayIcon() {
-        if (trayIcon != null && isTraySupported()) {
-            SystemTray.getSystemTray().remove(trayIcon);
-        }
-        trayIcon = null;
-    }
-
-    private void ensureTrayIcon() {
-        if (trayIcon != null || !isTraySupported()) {
-            return;
-        }
-
-        PopupMenu menu = new PopupMenu();
-        MenuItem openItem = new MenuItem("Open");
-        openItem.addActionListener(event -> Platform.runLater(this::showAttachedStage));
-        MenuItem exitItem = new MenuItem("Exit");
-        exitItem.addActionListener(event -> {
-            Runnable action = exitAction;
-            Platform.runLater(action);
-        });
-        menu.add(openItem);
-        menu.add(exitItem);
-
-        TrayIcon icon = new TrayIcon(createTrayImage(), "yt-dlp Service", menu);
-        icon.setImageAutoSize(true);
-        icon.addActionListener(event -> Platform.runLater(this::showAttachedStage));
-
-        try {
-            SystemTray.getSystemTray().add(icon);
-            trayIcon = icon;
-        } catch (AWTException e) {
-            trayIcon = null;
-        }
-    }
-
-    private Image createTrayImage() {
-        try (InputStream inputStream = SettingsService.class.getResourceAsStream(APP_ICON)) {
-            if (inputStream != null) {
-                BufferedImage icon = ImageIO.read(inputStream);
-                if (icon != null) {
-                    return icon;
-                }
-            }
-        } catch (IOException e) {
-            // Fall back to the generated tray image below.
-        }
-
-        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = image.createGraphics();
-        try {
-            graphics.setColor(new Color(9, 105, 218));
-            graphics.fillRoundRect(1, 1, 14, 14, 4, 4);
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(4, 4, 8, 2);
-            graphics.fillRect(7, 4, 2, 7);
-            graphics.fillPolygon(new int[] { 4, 12, 8 }, new int[] { 9, 9, 13 }, 3);
-        } finally {
-            graphics.dispose();
-        }
-        return image;
-    }
-
-    private void showAttachedStage() {
-        if (attachedStage == null) {
-            return;
-        }
-        attachedStage.show();
-        attachedStage.toFront();
+        systemTrayService.removeTrayIcon();
     }
 
     private void addPersistenceListener(BooleanProperty property) {

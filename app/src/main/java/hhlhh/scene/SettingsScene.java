@@ -76,7 +76,7 @@ public class SettingsScene {
         CheckBox postprocessPipeline = new CheckBox("Use custom postprocess pipeline");
         settingsService.bindPostprocessPipelineToggle(postprocessPipeline);
         Button repairDependencies = new Button("Repair dependencies");
-        repairDependencies.getStyleClass().add("repair-button");
+        repairDependencies.getStyleClass().add("danger-action");
         Label repairStatus = new Label();
         repairStatus.getStyleClass().add("dependency-status");
         repairStatus.setWrapText(true);

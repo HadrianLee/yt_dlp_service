@@ -105,6 +105,12 @@
     -fx-border-insets: 16;
 }
 
+.dialog-panel {
+    -fx-padding: 20;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+}
+
 .settings-panel {
     -fx-padding: 22;
     -fx-background-insets: 16;
@@ -155,13 +161,13 @@
     -fx-border-color: -app-accent;
 }
 
-.repair-button {
+.danger-action {
     -fx-background-color: -app-repair-bg;
     -fx-border-color: -app-border-soft;
     -fx-text-fill: -app-danger;
 }
 
-.repair-button:hover {
+.danger-action:hover {
     -fx-background-color: derive(-app-repair-bg, -6%);
 }
 

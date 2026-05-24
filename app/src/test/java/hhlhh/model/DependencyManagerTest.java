@@ -39,6 +39,15 @@ class DependencyManagerTest {
     }
 
     @Test
+    void binaryNamesDoNotUseExeSuffixOnMacOS() {
+        System.setProperty("os.name", "Mac OS X");
+        DependencyManager dependencyManager = new DependencyManager();
+
+        assertEquals("yt-dlp", dependencyManager.getYtDlpBinaryName());
+        assertEquals("ffmpeg", dependencyManager.getFmpegbinaryName());
+    }
+
+    @Test
     void binDirectoryPathComesFromAppPaths() {
         DependencyManager dependencyManager = new DependencyManager();
 

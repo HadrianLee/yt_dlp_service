@@ -1,0 +1,213 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        default: "main"
+        type: string
+      version:
+        required: false
+        default: ""
+        type: string
+      tag:
+        required: false
+        default: ""
+        type: string
+      prerelease:
+        required: false
+        default: false
+        type: boolean
+      windows:
+        required: false
+        default: true
+        type: boolean
+      macos:
+        required: false
+        default: true
+        type: boolean
+      linux:
+        required: false
+        default: true
+        type: boolean
+
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA to release"
+        required: true
+        default: "main"
+        type: string
+      version:
+        description: "Release/app version, for example 1.0.14. Defaults to 1.0.<run_number>."
+        required: false
+        default: ""
+        type: string
+      tag:
+        description: "Release tag. Defaults to v<version>."
+        required: false
+        default: ""
+        type: string
+      prerelease:
+        description: "Mark as a pre-release"
+        default: false
+        type: boolean
+      windows:
+        description: "Build and release Windows app image ZIP"
+        default: true
+        type: boolean
+      macos:
+        description: "Build and release macOS app image ZIP"
+        default: true
+        type: boolean
+      linux:
+        description: "Build and release Linux app image ZIP"
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.process_inputs.outputs.app_version }}
+      tag: ${{ steps.process_inputs.outputs.tag }}
+      head_sha: ${{ steps.get_target.outputs.head_sha }}
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Process inputs
+        id: process_inputs
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        shell: python
+        run: |
+          import os
+          import re
+
+          app_version = os.environ["INPUT_VERSION"] or f"1.0.{os.environ['GITHUB_RUN_NUMBER']}"
+          if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){0,2}", app_version):
+              raise SystemExit("version must contain one to three numeric dot-separated parts, for example 1.0.14")
+
+          tag = os.environ["INPUT_TAG"] or f"v{app_version}"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"app_version={app_version}\n")
+              output.write(f"tag={tag}\n")
+
+      - name: Get target commit
+        id: get_target
+        shell: bash
+        run: echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: [prepare]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ inputs.ref }}
+      app_version: ${{ needs.prepare.outputs.app_version }}
+      windows: ${{ inputs.windows }}
+      macos: ${{ inputs.macos }}
+      linux: ${{ inputs.linux }}
+
+  publish:
+    name: Publish GitHub release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    env:
+      APP_VERSION: ${{ needs.prepare.outputs.app_version }}
+      HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      RELEASE_REF: ${{ inputs.ref }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifact
+          pattern: build-*
+          merge-multiple: true
+
+      - name: Generate release notes
+        shell: pwsh
+        env:
+          ARTIFACT_DIR: artifact
+          RELEASE_NOTES_FILE: RELEASE_NOTES.md
+          RELEASE_TITLE: YtDlpService ${{ needs.prepare.outputs.app_version }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $assets = Get-ChildItem $env:ARTIFACT_DIR -File | Sort-Object Name
+          $assetList = ($assets | ForEach-Object { "- $($_.Name)" }) -join "`n"
+
+          $notes = @"
+          ## $env:RELEASE_TITLE
+
+          Built from ``$env:RELEASE_REF`` at ``$env:HEAD_SHA``.
+
+          ### Assets
+
+          $assetList
+          "@
+          $notes.Trim() | Set-Content -Path $env:RELEASE_NOTES_FILE -Encoding utf8
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          ARTIFACT_DIR: artifact
+          PRERELEASE: ${{ inputs.prerelease }}
+          RELEASE_NOTES_FILE: RELEASE_NOTES.md
+          RELEASE_TITLE: YtDlpService ${{ needs.prepare.outputs.app_version }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+
+          $assets = Get-ChildItem $env:ARTIFACT_DIR -File | Sort-Object Name | ForEach-Object { $_.FullName }
+          if (-not $assets) {
+            throw "No release assets were downloaded."
+          }
+
+          $editArgs = @(
+            "release", "edit", $env:RELEASE_TAG,
+            "--title", $env:RELEASE_TITLE,
+            "--notes-file", $env:RELEASE_NOTES_FILE
+          )
+          if ($env:PRERELEASE -eq "true") {
+            $editArgs += "--prerelease"
+          } else {
+            $editArgs += "--latest"
+          }
+
+          gh release view $env:RELEASE_TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            & gh @editArgs
+            $uploadArgs = @("release", "upload", $env:RELEASE_TAG) + $assets + @("--clobber")
+            & gh @uploadArgs
+          } else {
+            $createArgs = @(
+              "release", "create", $env:RELEASE_TAG
+            ) + $assets + @(
+              "--target", $env:HEAD_SHA,
+              "--title", $env:RELEASE_TITLE,
+              "--notes-file", $env:RELEASE_NOTES_FILE
+            )
+            if ($env:PRERELEASE -eq "true") {
+              $createArgs += "--prerelease"
+            } else {
+              $createArgs += "--latest"
+            }
+            & gh @createArgs
+          }

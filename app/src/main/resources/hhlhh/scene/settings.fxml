@@ -21,7 +21,7 @@
                 <CheckBox fx:id="postprocessPipelineToggle" text="Use custom postprocess pipeline" />
                 <Button fx:id="repairDependenciesButton"
                         text="Repair dependencies"
-                        styleClass="repair-button" />
+                        styleClass="danger-action" />
                 <Label fx:id="dependencyRepairStatusLabel"
                        styleClass="dependency-status"
                        wrapText="true" />

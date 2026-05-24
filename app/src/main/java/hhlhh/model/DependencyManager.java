@@ -19,10 +19,14 @@ public class DependencyManager {
             "https://github.com/HadrianLee/yt-dlp/releases/download/2026.05.23.121724/yt-dlp.exe";
     private static final String YTDLP_LINUX_URL =
             "https://github.com/HadrianLee/yt-dlp/releases/download/2026.05.23.121724/yt-dlp";
+    private static final String YTDLP_MACOS_URL =
+            "https://github.com/HadrianLee/yt-dlp/releases/download/2026.05.23.121724/yt-dlp_macos";
     private static final String FFMPEG_WINDOWS_64_URL =
             "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-win-64.zip";
     private static final String FFMPEG_LINUX_64_URL =
             "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip";
+    private static final String FFMPEG_MACOS_64_URL =
+            "https://evermeet.cx/ffmpeg/ffmpeg-8.1.1.zip";
 
     private final HttpClient httpClient;
 
@@ -55,7 +59,7 @@ public class DependencyManager {
         return switch (os) {
             case WINDOWS -> YTDLP_WINDOWS_URL;
             case LINUX -> YTDLP_LINUX_URL;
-            case MAC_OS -> throw new IllegalStateException("No yt-dlp macOS download URL configured yet.");
+            case MAC_OS -> YTDLP_MACOS_URL;
             default -> throw new IllegalStateException("Unsupported Operating System Platform.");
         };
     }
@@ -64,7 +68,7 @@ public class DependencyManager {
         return switch (os) {
             case WINDOWS -> FFMPEG_WINDOWS_64_URL;
             case LINUX -> FFMPEG_LINUX_64_URL;
-            case MAC_OS -> throw new IllegalStateException("No FFmpeg macOS download URL configured yet.");
+            case MAC_OS -> FFMPEG_MACOS_64_URL;
             default -> throw new IllegalStateException("Unsupported Operating System Platform.");
         };
     }
