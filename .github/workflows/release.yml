@@ -162,7 +162,7 @@ jobs:
         env:
           ARTIFACT_DIR: artifact
           RELEASE_NOTES_FILE: RELEASE_NOTES.md
-          RELEASE_TITLE: YtDlpService ${{ needs.prepare.outputs.app_version }}
+          RELEASE_TITLE: YtDlpService v${{ needs.prepare.outputs.app_version }}
         run: |
           $ErrorActionPreference = "Stop"
           $assets = Get-ChildItem $env:ARTIFACT_DIR -File | Sort-Object Name
@@ -185,7 +185,7 @@ jobs:
           ARTIFACT_DIR: artifact
           PRERELEASE: ${{ inputs.prerelease }}
           RELEASE_NOTES_FILE: RELEASE_NOTES.md
-          RELEASE_TITLE: YtDlpService ${{ needs.prepare.outputs.app_version }}
+          RELEASE_TITLE: $(Get-Date -Format 'yyyy.MM.dd.HHmmss')
         run: |
           $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
