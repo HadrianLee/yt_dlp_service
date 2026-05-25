@@ -14,7 +14,7 @@ network policies.
 # INSTALLATION
 
 <!-- MANPAGE: BEGIN EXCLUDED SECTION -->
-[![Windows](https://img.shields.io/badge/-Windows_x64-blue.svg?style=for-the-badge&logo=windows)](https://github.com/HadrianLee/yt_dlp_service/releases/latest/download/YtDlpService.zip)
+[![Windows](https://img.shields.io/badge/-Windows_x64-blue.svg?style=for-the-badge&logo=windows)](https://github.com/HadrianLee/yt_dlp_service/releases/latest/download/YtDlpService-windows.zip)
 [![Linux](https://img.shields.io/badge/-Linux_x64-red.svg?style=for-the-badge&logo=linux)](https://github.com/HadrianLee/yt_dlp_service/releases/latest/download/YtDlpService-linux.zip)
 [![MacOS](https://img.shields.io/badge/-MacOS-lightblue.svg?style=for-the-badge&logo=apple)](https://github.com/HadrianLee/yt_dlp_service/releases/latest/download/YtDlpService-macos.zip)
 [![Source Zip](https://img.shields.io/badge/-Source_zip-green.svg?style=for-the-badge)](https://github.com/HadrianLee/yt_dlp_service/archive/refs/heads/main.zip)
