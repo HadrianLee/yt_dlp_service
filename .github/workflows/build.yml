@@ -8,8 +8,7 @@ on:
         default: ""
         type: string
       app_version:
-        required: false
-        default: ""
+        required: true
         type: string
       windows:
         required: false
@@ -32,9 +31,8 @@ on:
         default: "main"
         type: string
       app_version:
-        description: "jpackage app version, for example 1.0.14. Defaults to 1.0.<run_number>."
-        required: false
-        default: ""
+        description: "jpackage app version, for example 1.0.14."
+        required: true
         type: string
       windows:
         description: "Build Windows app image ZIP"
@@ -67,7 +65,6 @@ jobs:
         env:
           INPUTS: ${{ toJSON(inputs) }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         shell: python
         run: |
           import json
@@ -75,7 +72,9 @@ jobs:
           import re
 
           inputs = json.loads(os.environ["INPUTS"] or "{}")
-          app_version = inputs.get("app_version") or f"1.0.{os.environ['GITHUB_RUN_NUMBER']}"
+          app_version = inputs.get("app_version")
+          if not app_version:
+              raise SystemExit("app_version is required")
           if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){0,2}", app_version):
               raise SystemExit("app_version must contain one to three numeric dot-separated parts, for example 1.0.14")
 

@@ -12,8 +12,7 @@ on:
         default: ""
         type: string
       version:
-        required: false
-        default: ""
+        required: true
         type: string
       prerelease:
         required: false
@@ -53,9 +52,7 @@ on:
       version:
         description: |
           VERSION: major.minor.patch
-          (default: auto-generated)
-        required: false
-        default: ''
+        required: true
         type: string
       prerelease:
         description: Pre-release
@@ -95,13 +92,14 @@ jobs:
           INPUT_TARGET: ${{ inputs.target }}
           INPUT_VERSION: ${{ inputs.version }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         shell: python
         run: |
           import os
           import re
 
-          app_version = os.environ["INPUT_VERSION"] or f"1.0.{os.environ['GITHUB_RUN_NUMBER']}"
+          app_version = os.environ["INPUT_VERSION"]
+          if not app_version:
+              raise SystemExit("version is required")
           if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){0,2}", app_version):
               raise SystemExit("version must contain one to three numeric dot-separated parts, for example 1.0.14")
 
