@@ -3,8 +3,10 @@ package hhlhh;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
@@ -24,6 +26,7 @@ public class App extends Application {
     private static final double WINDOW_WIDTH = 840;
     private static final double WINDOW_HEIGHT = 540;
     private static final String APP_STYLESHEET = "/hhlhh/style/app.css";
+    private static final String DARK_CLASS = "dark";
 
     private final SettingsService settingsService = new SettingsService();
     private final SingleInstanceService singleInstanceService = new SingleInstanceService();
@@ -123,13 +126,28 @@ public class App extends Application {
     }
 
     private void setDarkModeClass(Scene scene, boolean darkMode) {
+        setDarkModeClass(scene.getRoot(), darkMode);
+    }
+
+    private void setDarkModeClass(Parent root, boolean darkMode) {
         if (darkMode) {
-            if (!scene.getRoot().getStyleClass().contains("dark")) {
-                scene.getRoot().getStyleClass().add("dark");
+            if (!root.getStyleClass().contains(DARK_CLASS)) {
+                root.getStyleClass().add(DARK_CLASS);
             }
         } else {
-            scene.getRoot().getStyleClass().remove("dark");
+            root.getStyleClass().remove(DARK_CLASS);
         }
+    }
+
+    private void applyStyles(DialogPane dialogPane) {
+        var stylesheet = App.class.getResource(APP_STYLESHEET);
+        if (stylesheet != null) {
+            dialogPane.getStylesheets().add(stylesheet.toExternalForm());
+        }
+        setDarkModeClass(dialogPane, settingsService.isDarkMode());
+        settingsService.darkModeProperty().addListener(
+                (observable, oldValue, darkMode) -> setDarkModeClass(dialogPane, darkMode)
+        );
     }
 
     private void showAlreadyRunningMessage() {
@@ -137,6 +155,7 @@ public class App extends Application {
         alert.setTitle("Downloader Shell");
         alert.setHeaderText("Downloader Shell is already running");
         alert.setContentText("Only one copy of this application can run at a time.");
+        applyStyles(alert.getDialogPane());
         alert.showAndWait();
     }
 

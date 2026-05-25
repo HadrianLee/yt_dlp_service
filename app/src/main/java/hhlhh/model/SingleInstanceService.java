@@ -12,11 +12,20 @@ import java.nio.charset.StandardCharsets;
 
 public class SingleInstanceService implements AutoCloseable {
 
-    private static final int SINGLE_INSTANCE_PORT = 47542;
+    private static final int DEFAULT_SINGLE_INSTANCE_PORT = 47542;
     private static final String SHOW_COMMAND = "hhlhh.show";
     private static final String OK_RESPONSE = "ok";
 
+    private final int singleInstancePort;
     private ServerSocket serverSocket;
+
+    public SingleInstanceService() {
+        this(DEFAULT_SINGLE_INSTANCE_PORT);
+    }
+
+    SingleInstanceService(int singleInstancePort) {
+        this.singleInstancePort = singleInstancePort;
+    }
 
     public boolean acquire(Runnable showExistingInstanceAction) {
         if (serverSocket != null) {
@@ -26,7 +35,7 @@ public class SingleInstanceService implements AutoCloseable {
         try {
             ServerSocket socket = new ServerSocket();
             socket.setReuseAddress(false);
-            socket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), SINGLE_INSTANCE_PORT), 1);
+            socket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), singleInstancePort), 1);
             serverSocket = socket;
             startSignalListener(showExistingInstanceAction);
             return true;
@@ -37,7 +46,7 @@ public class SingleInstanceService implements AutoCloseable {
 
     public boolean signalExistingInstance() {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), SINGLE_INSTANCE_PORT), 1000);
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), singleInstancePort), 1000);
             socket.setSoTimeout(1000);
 
             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
