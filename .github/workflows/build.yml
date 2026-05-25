@@ -177,6 +177,29 @@ jobs:
             $stream.Dispose()
           }
 
+      - name: Create Mac icon
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          PNG_PATH: src/main/resources/hhlhh/icon/app.png
+          ICONSET_PATH: target/jpackage/app.iconset
+          ICNS_PATH: target/jpackage/app.icns
+        run: |
+          set -euo pipefail
+          mkdir -p "$ICONSET_PATH"
+
+          sips -z 16 16 "$PNG_PATH" --out "$ICONSET_PATH/icon_16x16.png"
+          sips -z 32 32 "$PNG_PATH" --out "$ICONSET_PATH/icon_16x16@2x.png"
+          sips -z 32 32 "$PNG_PATH" --out "$ICONSET_PATH/icon_32x32.png"
+          sips -z 64 64 "$PNG_PATH" --out "$ICONSET_PATH/icon_32x32@2x.png"
+          sips -z 128 128 "$PNG_PATH" --out "$ICONSET_PATH/icon_128x128.png"
+          sips -z 256 256 "$PNG_PATH" --out "$ICONSET_PATH/icon_128x128@2x.png"
+          sips -z 256 256 "$PNG_PATH" --out "$ICONSET_PATH/icon_256x256.png"
+          sips -z 512 512 "$PNG_PATH" --out "$ICONSET_PATH/icon_256x256@2x.png"
+          sips -z 512 512 "$PNG_PATH" --out "$ICONSET_PATH/icon_512x512.png"
+          sips -z 1024 1024 "$PNG_PATH" --out "$ICONSET_PATH/icon_512x512@2x.png"
+          iconutil -c icns "$ICONSET_PATH" -o "$ICNS_PATH"
+
       - name: Build app image
         shell: pwsh
         env:
@@ -184,12 +207,14 @@ jobs:
           APP_MODULE: hhlhh/hhlhh.App
           APP_VENDOR: HHLHH
           ICON_PATH: target\jpackage\app.ico
+          MAC_ICON_PATH: target/jpackage/app.icns
           LINUX_ICON_PATH: src/main/resources/hhlhh/icon/app.png
           JPACKAGE_DEST: target/jpackage
           JPACKAGE_MODULES: javafx.controls,javafx.fxml,java.net.http,java.desktop,jdk.crypto.ec
           WINDOWS_MODULE_PATH: target\classes;target\dependency
           UNIX_MODULE_PATH: target/classes:target/dependency
           IS_WINDOWS: ${{ runner.os == 'Windows' }}
+          IS_MACOS: ${{ runner.os == 'macOS' }}
           IS_LINUX: ${{ runner.os == 'Linux' }}
         run: |
           $ErrorActionPreference = "Stop"
@@ -214,6 +239,8 @@ jobs:
 
           if ($env:IS_WINDOWS -eq "true") {
             $jpackageArgs += @("--icon", $env:ICON_PATH)
+          } elseif ($env:IS_MACOS -eq "true") {
+            $jpackageArgs += @("--icon", $env:MAC_ICON_PATH)
           } elseif ($env:IS_LINUX -eq "true") {
             $jpackageArgs += @("--icon", $env:LINUX_ICON_PATH)
           }

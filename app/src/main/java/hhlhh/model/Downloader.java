@@ -109,7 +109,7 @@ public class Downloader {
                 new LogService(),
                 () -> this.settingsService != null && this.settingsService.shouldUsePostprocessPipeline()
         );
-        this.defaultDownloadPath = resolveDefaultDownloadPath();
+        this.defaultDownloadPath = AppPaths.defaultDownloadPath();
         this.urlField = urlField;
         this.pathField = pathField;
         this.enterButton = enterButton;
@@ -153,10 +153,6 @@ public class Downloader {
         stopButton.setOnAction(event -> forceStopDownload());
 
         updateDownloadButtonState();
-    }
-
-    private Path resolveDefaultDownloadPath() {
-        return Path.of(System.getProperty("user.dir")).resolve("download").toAbsolutePath().normalize();
     }
 
     private void chooseDownloadPath() {
