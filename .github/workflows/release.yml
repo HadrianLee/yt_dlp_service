@@ -185,8 +185,9 @@ jobs:
           ARTIFACT_DIR: artifact
           PRERELEASE: ${{ inputs.prerelease }}
           RELEASE_NOTES_FILE: RELEASE_NOTES.md
-          RELEASE_TITLE: $(Get-Date -Format 'yyyy.MM.dd.HHmmss')
         run: |
+          $env:RELEASE_TITLE = Get-Date -Format 'yyyy.MM.dd.HHmmss'
+          
           $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
 
