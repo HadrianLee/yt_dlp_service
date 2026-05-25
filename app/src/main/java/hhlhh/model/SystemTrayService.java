@@ -9,10 +9,6 @@ import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-
-import javax.imageio.ImageIO;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -21,7 +17,6 @@ import javafx.stage.Stage;
 
 public class SystemTrayService {
 
-    private static final String APP_ICON = "/hhlhh/icon/app.png";
     private static final String TRAY_TOOLTIP = "yt-dlp Service";
 
     private final ReadOnlyBooleanWrapper traySupported = new ReadOnlyBooleanWrapper(SystemTray.isSupported());
@@ -114,17 +109,10 @@ public class SystemTrayService {
     }
 
     private Image createTrayImage() {
-        try (InputStream inputStream = SystemTrayService.class.getResourceAsStream(APP_ICON)) {
-            if (inputStream != null) {
-                BufferedImage icon = ImageIO.read(inputStream);
-                if (icon != null) {
-                    return icon;
-                }
-            }
-        } catch (IOException e) {
-            // Fall back to the generated tray image below.
-        }
+        return AppIconService.loadTrayIcon().orElseGet(this::createFallbackTrayImage);
+    }
 
+    private Image createFallbackTrayImage() {
         BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         try {

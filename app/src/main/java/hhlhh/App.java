@@ -1,18 +1,21 @@
 package hhlhh;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import hhlhh.model.AppIconService;
 import hhlhh.model.ConsentFormService;
 import hhlhh.model.DependencyManager;
 import hhlhh.model.NavigationService;
 import hhlhh.model.SettingsService;
+import hhlhh.model.SingleInstanceService;
 import hhlhh.scene.ConsentFormScene;
 import hhlhh.scene.DownloaderScene;
 
@@ -21,12 +24,22 @@ public class App extends Application {
     private static final double WINDOW_WIDTH = 840;
     private static final double WINDOW_HEIGHT = 540;
     private static final String APP_STYLESHEET = "/hhlhh/style/app.css";
-    private static final String APP_ICON = "/hhlhh/icon/app.png";
 
     private final SettingsService settingsService = new SettingsService();
+    private final SingleInstanceService singleInstanceService = new SingleInstanceService();
+    private Stage primaryStage;
 
     @Override
     public void start(Stage primaryStage) {
+        if (!singleInstanceService.acquire(() -> Platform.runLater(this::showPrimaryStage))) {
+            if (!singleInstanceService.signalExistingInstance()) {
+                showAlreadyRunningMessage();
+            }
+            Platform.exit();
+            return;
+        }
+
+        this.primaryStage = primaryStage;
         primaryStage.setTitle("Downloader Shell");
         applyAppIcon(primaryStage);
         applyWindowSize(primaryStage);
@@ -41,6 +54,11 @@ public class App extends Application {
 
         showDependencyInitScene(primaryStage);
         primaryStage.show();
+    }
+
+    @Override
+    public void stop() {
+        singleInstanceService.close();
     }
 
     private void showDependencyInitScene(Stage primaryStage) {
@@ -90,13 +108,7 @@ public class App extends Application {
     }
 
     private void applyAppIcon(Stage stage) {
-        try (var inputStream = App.class.getResourceAsStream(APP_ICON)) {
-            if (inputStream != null) {
-                stage.getIcons().add(new Image(inputStream));
-            }
-        } catch (Exception e) {
-            // A missing or unreadable icon should not block app startup.
-        }
+        AppIconService.loadJavaFxIcon().ifPresent(stage.getIcons()::add);
     }
 
     private void applyStyles(Scene scene) {
@@ -118,5 +130,24 @@ public class App extends Application {
         } else {
             scene.getRoot().getStyleClass().remove("dark");
         }
+    }
+
+    private void showAlreadyRunningMessage() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Downloader Shell");
+        alert.setHeaderText("Downloader Shell is already running");
+        alert.setContentText("Only one copy of this application can run at a time.");
+        alert.showAndWait();
+    }
+
+    private void showPrimaryStage() {
+        if (primaryStage == null) {
+            return;
+        }
+
+        primaryStage.show();
+        primaryStage.setIconified(false);
+        primaryStage.toFront();
+        primaryStage.requestFocus();
     }
 }

@@ -146,68 +146,14 @@ jobs:
           -DincludeScope=runtime
           -DoutputDirectory=target/dependency
 
-      - name: Create Windows app icon
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          PNG_PATH: src\main\resources\hhlhh\icon\app.png
-          ICO_PATH: target\jpackage\app.ico
-        run: |
-          $ErrorActionPreference = "Stop"
-          New-Item -ItemType Directory -Force -Path (Split-Path $env:ICO_PATH) | Out-Null
-
-          $pngBytes = [System.IO.File]::ReadAllBytes($env:PNG_PATH)
-          $stream = [System.IO.File]::Create($env:ICO_PATH)
-          $writer = New-Object System.IO.BinaryWriter($stream)
-          try {
-            $writer.Write([UInt16]0)
-            $writer.Write([UInt16]1)
-            $writer.Write([UInt16]1)
-            $writer.Write([Byte]0)
-            $writer.Write([Byte]0)
-            $writer.Write([Byte]0)
-            $writer.Write([Byte]0)
-            $writer.Write([UInt16]1)
-            $writer.Write([UInt16]32)
-            $writer.Write([UInt32]$pngBytes.Length)
-            $writer.Write([UInt32]22)
-            $writer.Write($pngBytes)
-          } finally {
-            $writer.Dispose()
-            $stream.Dispose()
-          }
-
-      - name: Create Mac icon
-        if: runner.os == 'macOS'
-        shell: bash
-        env:
-          PNG_PATH: src/main/resources/hhlhh/icon/app.png
-          ICONSET_PATH: target/jpackage/app.iconset
-          ICNS_PATH: target/jpackage/app.icns
-        run: |
-          set -euo pipefail
-          mkdir -p "$ICONSET_PATH"
-
-          sips -z 16 16 "$PNG_PATH" --out "$ICONSET_PATH/icon_16x16.png"
-          sips -z 32 32 "$PNG_PATH" --out "$ICONSET_PATH/icon_16x16@2x.png"
-          sips -z 32 32 "$PNG_PATH" --out "$ICONSET_PATH/icon_32x32.png"
-          sips -z 64 64 "$PNG_PATH" --out "$ICONSET_PATH/icon_32x32@2x.png"
-          sips -z 128 128 "$PNG_PATH" --out "$ICONSET_PATH/icon_128x128.png"
-          sips -z 256 256 "$PNG_PATH" --out "$ICONSET_PATH/icon_128x128@2x.png"
-          sips -z 256 256 "$PNG_PATH" --out "$ICONSET_PATH/icon_256x256.png"
-          sips -z 512 512 "$PNG_PATH" --out "$ICONSET_PATH/icon_256x256@2x.png"
-          sips -z 512 512 "$PNG_PATH" --out "$ICONSET_PATH/icon_512x512.png"
-          sips -z 1024 1024 "$PNG_PATH" --out "$ICONSET_PATH/icon_512x512@2x.png"
-          iconutil -c icns "$ICONSET_PATH" -o "$ICNS_PATH"
-
       - name: Build app image
         shell: pwsh
         env:
           APP_NAME: YtDlpService
           APP_MODULE: hhlhh/hhlhh.App
           APP_VENDOR: HHLHH
-          ICON_PATH: target\jpackage\app.ico
-          MAC_ICON_PATH: target/jpackage/app.icns
+          WINDOWS_ICON_PATH: src/main/resources/hhlhh/icon/app.ico
+          MAC_ICON_PATH: src/main/resources/hhlhh/icon/app.icns
           LINUX_ICON_PATH: src/main/resources/hhlhh/icon/app.png
           JPACKAGE_DEST: target/jpackage
           JPACKAGE_MODULES: javafx.controls,javafx.fxml,java.net.http,java.desktop,jdk.crypto.ec
@@ -238,7 +184,7 @@ jobs:
           )
 
           if ($env:IS_WINDOWS -eq "true") {
-            $jpackageArgs += @("--icon", $env:ICON_PATH)
+            $jpackageArgs += @("--icon", $env:WINDOWS_ICON_PATH)
           } elseif ($env:IS_MACOS -eq "true") {
             $jpackageArgs += @("--icon", $env:MAC_ICON_PATH)
           } elseif ($env:IS_LINUX -eq "true") {
