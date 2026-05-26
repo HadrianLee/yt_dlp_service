@@ -29,10 +29,19 @@ public class DependencyManager {
             "https://evermeet.cx/ffmpeg/ffmpeg-8.1.1.zip";
 
     private final HttpClient httpClient;
+    private final Path binDirectory;
 
     public DependencyManager() {
-        // Configure standard HTTP Client following redirects automatically
-        this.httpClient = HttpClient.newBuilder()
+        this(AppPaths.binDirectory(), createHttpClient());
+    }
+
+    DependencyManager(Path binDirectory, HttpClient httpClient) {
+        this.binDirectory = binDirectory;
+        this.httpClient = httpClient;
+    }
+
+    private static HttpClient createHttpClient() {
+        return HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
     }
@@ -133,13 +142,13 @@ public class DependencyManager {
             throw new IllegalStateException("Unsupported Operating System Platform.");
         }
 
-        File binDir = AppPaths.binDirectory().toFile();
+        File binDir = binDirectory.toFile();
         if (!binDir.exists()) {
             binDir.mkdirs();
         }
 
-        Path ytDlpFile = AppPaths.binDirectory().resolve(getYtDlpBinaryName());
-        Path ffmpegFile = AppPaths.binDirectory().resolve(getFmpegbinaryName());
+        Path ytDlpFile = binDirectory.resolve(getYtDlpBinaryName());
+        Path ffmpegFile = binDirectory.resolve(getFmpegbinaryName());
 
         // --- Handle Task 1: yt-dlp check and update ---
         if (!ytDlpFile.toFile().exists()) {
@@ -171,6 +180,6 @@ public class DependencyManager {
     }
 
     public String getBinDirectoryPath() {
-        return AppPaths.binDirectory().toAbsolutePath().toString();
+        return binDirectory.toAbsolutePath().toString();
     }
 }

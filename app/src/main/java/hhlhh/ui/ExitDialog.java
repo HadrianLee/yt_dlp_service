@@ -1,4 +1,4 @@
-package hhlhh.model;
+package hhlhh.ui;
 
 import hhlhh.scene.ExitDialogScene;
 import javafx.stage.Modality;
@@ -31,12 +31,16 @@ public class ExitDialog {
 
     public void confirmExit(Stage dialogStage) {
         exitConfirmed = true;
-        dialogStage.close();
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 
     public void cancelExit(Stage dialogStage) {
         exitConfirmed = false;
-        dialogStage.close();
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 
     public String title() {
@@ -45,5 +49,9 @@ public class ExitDialog {
 
     public String message() {
         return message;
+    }
+
+    boolean isExitConfirmed() {
+        return exitConfirmed;
     }
 }

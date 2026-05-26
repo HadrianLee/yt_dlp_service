@@ -12,14 +12,15 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import hhlhh.model.AppIconService;
+import hhlhh.desktop.AppIconService;
+import hhlhh.desktop.SystemTrayService;
 import hhlhh.model.ConsentFormService;
 import hhlhh.model.DependencyManager;
-import hhlhh.model.NavigationService;
 import hhlhh.model.SettingsService;
 import hhlhh.model.SingleInstanceService;
 import hhlhh.scene.ConsentFormScene;
 import hhlhh.scene.DownloaderScene;
+import hhlhh.ui.NavigationService;
 
 public class App extends Application {
 
@@ -29,20 +30,17 @@ public class App extends Application {
     private static final String DARK_CLASS = "dark";
 
     private final SettingsService settingsService = new SettingsService();
+    private final SystemTrayService systemTrayService = new SystemTrayService();
     private final SingleInstanceService singleInstanceService = new SingleInstanceService();
-    private Stage primaryStage;
 
     @Override
     public void start(Stage primaryStage) {
-        if (!singleInstanceService.acquire(() -> Platform.runLater(this::showPrimaryStage))) {
-            if (!singleInstanceService.signalExistingInstance()) {
-                showAlreadyRunningMessage();
-            }
+        if (!singleInstanceService.acquire()) {
+            showAlreadyRunningMessage();
             Platform.exit();
             return;
         }
 
-        this.primaryStage = primaryStage;
         primaryStage.setTitle("Downloader Shell");
         applyAppIcon(primaryStage);
         applyWindowSize(primaryStage);
@@ -83,8 +81,9 @@ public class App extends Application {
         // UI Updates upon thread resolution states
         initTask.setOnSucceeded(e -> {
             statusLabel.setText("Ready! Launching Downloader App Interface...");
-            NavigationService navigationService = new NavigationService(settingsService);
-            setAppScene(primaryStage, new DownloaderScene(settingsService, navigationService).create(primaryStage));
+            NavigationService navigationService = new NavigationService(settingsService, systemTrayService);
+            setAppScene(primaryStage, new DownloaderScene(settingsService, navigationService, systemTrayService)
+                    .create(primaryStage));
         });
 
         initTask.setOnFailed(e -> {
@@ -120,8 +119,9 @@ public class App extends Application {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
         setDarkModeClass(scene, settingsService.isDarkMode());
-        settingsService.darkModeProperty().addListener(
-                (observable, oldValue, darkMode) -> setDarkModeClass(scene, darkMode)
+        settingsService.addPropertyChangeListener(
+                SettingsService.DARK_MODE,
+                event -> setDarkModeClass(scene, (boolean) event.getNewValue())
         );
     }
 
@@ -145,8 +145,9 @@ public class App extends Application {
             dialogPane.getStylesheets().add(stylesheet.toExternalForm());
         }
         setDarkModeClass(dialogPane, settingsService.isDarkMode());
-        settingsService.darkModeProperty().addListener(
-                (observable, oldValue, darkMode) -> setDarkModeClass(dialogPane, darkMode)
+        settingsService.addPropertyChangeListener(
+                SettingsService.DARK_MODE,
+                event -> setDarkModeClass(dialogPane, (boolean) event.getNewValue())
         );
     }
 
@@ -157,16 +158,5 @@ public class App extends Application {
         alert.setContentText("Only one copy of this application can run at a time.");
         applyStyles(alert.getDialogPane());
         alert.showAndWait();
-    }
-
-    private void showPrimaryStage() {
-        if (primaryStage == null) {
-            return;
-        }
-
-        primaryStage.show();
-        primaryStage.setIconified(false);
-        primaryStage.toFront();
-        primaryStage.requestFocus();
     }
 }

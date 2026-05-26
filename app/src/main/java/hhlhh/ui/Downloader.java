@@ -1,4 +1,4 @@
-package hhlhh.model;
+package hhlhh.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -6,6 +6,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import hhlhh.desktop.SystemTrayService;
+import hhlhh.model.AppPaths;
+import hhlhh.model.DependencyManager;
+import hhlhh.model.DownloadService;
+import hhlhh.model.LogService;
+import hhlhh.model.SettingsService;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -30,6 +36,7 @@ public class Downloader {
     private final Stage owner;
     private final DownloadService downloadService;
     private final SettingsService settingsService;
+    private final SystemTrayService systemTrayService;
     private final Path defaultDownloadPath;
     private final BooleanProperty downloadInProgress = new SimpleBooleanProperty(false);
 
@@ -81,6 +88,7 @@ public class Downloader {
                 outputArea,
                 progressIndicator,
                 thumbnailView,
+                null,
                 null
         );
     }
@@ -102,8 +110,47 @@ public class Downloader {
             ImageView thumbnailView,
             SettingsService settingsService
     ) {
+        this(
+                owner,
+                urlField,
+                pathField,
+                enterButton,
+                browseButton,
+                downloadButton,
+                stopButton,
+                verboseCheckBox,
+                statusLabel,
+                previewTitleLabel,
+                previewPane,
+                outputArea,
+                progressIndicator,
+                thumbnailView,
+                settingsService,
+                null
+        );
+    }
+
+    public Downloader(
+            Stage owner,
+            TextField urlField,
+            TextField pathField,
+            Button enterButton,
+            Button browseButton,
+            Button downloadButton,
+            Button stopButton,
+            CheckBox verboseCheckBox,
+            Label statusLabel,
+            Label previewTitleLabel,
+            VBox previewPane,
+            TextArea outputArea,
+            ProgressIndicator progressIndicator,
+            ImageView thumbnailView,
+            SettingsService settingsService,
+            SystemTrayService systemTrayService
+    ) {
         this.owner = owner;
         this.settingsService = settingsService;
+        this.systemTrayService = systemTrayService;
         this.downloadService = new DownloadService(
                 new DependencyManager(),
                 new LogService(),
@@ -373,14 +420,14 @@ public class Downloader {
     }
 
     private void notifyDownloadComplete(DownloadService.DownloadResult result) {
-        if (settingsService == null) {
+        if (settingsService == null || systemTrayService == null || !settingsService.isNotificationsEnabled()) {
             return;
         }
 
         String message = result.playlist()
                 ? "Playlist download finished in " + result.outputDirectory() + "."
                 : "Video download finished in " + result.outputDirectory() + ".";
-        settingsService.notifyDownloadComplete("Download complete", message);
+        systemTrayService.notifyTrayMessage("Download complete", message);
     }
 
     String toDisplayName(String title) {

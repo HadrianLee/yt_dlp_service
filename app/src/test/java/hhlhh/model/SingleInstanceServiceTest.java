@@ -3,12 +3,7 @@ package hhlhh.model;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -19,19 +14,18 @@ class SingleInstanceServiceTest {
     Path tempDir;
 
     @Test
-    void acquireBlocksSecondInstanceUntilClosed() throws Exception {
-        int port = findAvailablePort();
+    void acquireBlocksSecondInstanceUntilClosed() {
         Path lockPath = tempDir.resolve("single-instance.lock");
-        SingleInstanceService first = new SingleInstanceService(port, lockPath);
-        SingleInstanceService second = new SingleInstanceService(port, lockPath);
+        SingleInstanceService first = new SingleInstanceService(lockPath);
+        SingleInstanceService second = new SingleInstanceService(lockPath);
 
         try {
-            assertTrue(first.acquire(null));
-            assertFalse(second.acquire(null));
+            assertTrue(first.acquire());
+            assertFalse(second.acquire());
 
             first.close();
 
-            assertTrue(second.acquire(null));
+            assertTrue(second.acquire());
         } finally {
             first.close();
             second.close();
@@ -39,46 +33,25 @@ class SingleInstanceServiceTest {
     }
 
     @Test
-    void signalExistingInstanceRunsShowAction() throws Exception {
-        int port = findAvailablePort();
+    void acquireIsIdempotentForSameService() {
         Path lockPath = tempDir.resolve("single-instance.lock");
-        SingleInstanceService first = new SingleInstanceService(port, lockPath);
-        CountDownLatch signalReceived = new CountDownLatch(1);
+        SingleInstanceService service = new SingleInstanceService(lockPath);
 
         try {
-            assertTrue(first.acquire(signalReceived::countDown));
-
-            SingleInstanceService second = new SingleInstanceService(port, lockPath);
-            try {
-                assertTrue(second.signalExistingInstance());
-            } finally {
-                second.close();
-            }
-
-            assertTrue(signalReceived.await(2, TimeUnit.SECONDS));
+            assertTrue(service.acquire());
+            assertTrue(service.acquire());
         } finally {
-            first.close();
+            service.close();
         }
     }
 
     @Test
-    void acquireStillSucceedsWhenSignalPortIsUnavailable() throws Exception {
-        int port = findAvailablePort();
-        Path lockPath = tempDir.resolve("single-instance.lock");
+    void closeWithoutAcquireIsAllowed() {
+        SingleInstanceService service = new SingleInstanceService(tempDir.resolve("single-instance.lock"));
 
-        try (ServerSocket unavailablePort = new ServerSocket(port, 1, InetAddress.getLoopbackAddress())) {
-            SingleInstanceService service = new SingleInstanceService(port, lockPath);
-            try {
-                assertTrue(service.acquire(null));
-            } finally {
-                service.close();
-            }
-        }
-    }
+        service.close();
 
-    private int findAvailablePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-            return socket.getLocalPort();
-        }
+        assertTrue(service.acquire());
+        service.close();
     }
 }

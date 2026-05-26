@@ -6,6 +6,9 @@ module hhlhh {
     requires java.desktop;
 
     opens hhlhh to javafx.fxml;
+    opens hhlhh.desktop;
+    opens hhlhh.model;
     opens hhlhh.scene to javafx.fxml;
+    opens hhlhh.ui;
     exports hhlhh;
 }

@@ -1,4 +1,4 @@
-package hhlhh.model;
+package hhlhh.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,12 +44,24 @@ class DownloaderTest {
     }
 
     @Test
+    void isValidYoutubeUrlAcceptsTrimmedHttpAndUppercaseHosts() {
+        String videoId = UUID.randomUUID().toString();
+
+        assertTrue(downloader.isValidYoutubeUrl(" HTTP://YOUTUBE.COM/watch?v=" + videoId + " "));
+        assertTrue(downloader.isValidYoutubeUrl(" https://WWW.YOUTUBE.COM/shorts/" + videoId + " "));
+    }
+
+    @Test
     void isValidYoutubeUrlRejectsBlankNonHttpAndNonYoutubeUrls() {
         String videoId = UUID.randomUUID().toString();
 
         assertFalse(downloader.isValidYoutubeUrl(""));
+        assertFalse(downloader.isValidYoutubeUrl(null));
         assertFalse(downloader.isValidYoutubeUrl("ftp://youtube.com/watch?v=" + videoId));
         assertFalse(downloader.isValidYoutubeUrl("https://example.com/watch?v=" + videoId));
+        assertFalse(downloader.isValidYoutubeUrl("https://youtube.com.example.com/watch?v=" + videoId));
+        assertFalse(downloader.isValidYoutubeUrl("https://youtu.be.example.com/" + videoId));
+        assertFalse(downloader.isValidYoutubeUrl("https:///watch?v=" + videoId));
         assertFalse(downloader.isValidYoutubeUrl("not a url"));
     }
 
@@ -74,6 +86,14 @@ class DownloaderTest {
     }
 
     @Test
+    void toDisplayNameKeepsReadableFileCharactersAndCollapsesSeparators() {
+        String token = UUID.randomUUID().toString().substring(0, 8);
+
+        assertEquals("Some.Title-01_" + token, downloader.toDisplayName(" Some.Title-01 / " + token + " "));
+        assertEquals("Untitled", downloader.toDisplayName(".___---"));
+    }
+
+    @Test
     void countFilesReturnsRegularFileCountRecursively() throws Exception {
         Path nestedDirectory = tempDir.resolve("nested-" + UUID.randomUUID());
         Files.createDirectories(nestedDirectory);
@@ -86,5 +106,10 @@ class DownloaderTest {
     @Test
     void countFilesReturnsZeroForMissingDirectory() {
         assertEquals(0, downloader.countFiles(tempDir.resolve("missing")));
+    }
+
+    @Test
+    void countFilesReturnsZeroForNullDirectory() {
+        assertEquals(0, downloader.countFiles(null));
     }
 }

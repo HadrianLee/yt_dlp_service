@@ -2,7 +2,7 @@ package hhlhh.scene;
 
 import java.io.IOException;
 
-import hhlhh.model.NavigationService;
+import hhlhh.ui.NavigationService;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

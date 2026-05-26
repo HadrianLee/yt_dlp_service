@@ -1,10 +1,13 @@
-package hhlhh.model;
+package hhlhh.ui;
 
 import java.util.function.BooleanSupplier;
 
+import hhlhh.desktop.SystemTrayService;
+import hhlhh.model.SettingsService;
 import hhlhh.scene.NavigationScene;
 import hhlhh.scene.SettingsScene;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -19,19 +22,21 @@ public class NavigationService {
             "A download is still running. Exiting now will stop the app and may leave partial output files.";
 
     private final SettingsService settingsService;
+    private final SystemTrayService systemTrayService;
     private BooleanSupplier downloadInProgress = () -> false;
     private BorderPane root;
     private Node downloaderContent;
     private Node settingsContent;
     private Node navigationDrawer;
 
-    public NavigationService(SettingsService settingsService) {
+    public NavigationService(SettingsService settingsService, SystemTrayService systemTrayService) {
         this.settingsService = settingsService;
+        this.systemTrayService = systemTrayService;
     }
 
     public BorderPane createDownloaderShell(Stage stage, Node content) {
         downloaderContent = content;
-        settingsContent = new SettingsScene(settingsService).create();
+        settingsContent = new SettingsScene(settingsService, systemTrayService).create();
         navigationDrawer = new NavigationScene(this).create();
 
         root = new BorderPane();
@@ -41,10 +46,10 @@ public class NavigationService {
         root.setCenter(downloaderContent);
         setNavigationVisible(false);
 
-        settingsService.attachStage(stage);
-        settingsService.setExitAction(() -> exitFromTray(stage));
-        settingsService.setOpenDownloadAction(this::showDownloader);
-        settingsService.setOpenSettingsAction(this::showSettings);
+        systemTrayService.attachStage(stage);
+        systemTrayService.setExitAction(() -> exitFromTray(stage));
+        systemTrayService.setOpenDownloadAction(this::showDownloader);
+        systemTrayService.setOpenSettingsAction(this::showSettings);
         installCloseHandler(stage);
         return root;
     }
@@ -79,7 +84,10 @@ public class NavigationService {
         }
 
         updateThemeClass(scene, settingsService.isDarkMode());
-        settingsService.darkModeProperty().addListener((observable, oldValue, dark) -> updateThemeClass(scene, dark));
+        settingsService.addPropertyChangeListener(
+                SettingsService.DARK_MODE,
+                event -> updateThemeClass(scene, (boolean) event.getNewValue())
+        );
     }
 
     private HBox createTopBar() {
@@ -103,7 +111,7 @@ public class NavigationService {
     private void installCloseHandler(Stage stage) {
         stage.setOnCloseRequest(event -> {
             boolean inProgress = downloadInProgress.getAsBoolean();
-            if (inProgress && settingsService.shouldCloseToTrayDuringDownload()) {
+            if (inProgress && shouldCloseToTrayDuringDownload()) {
                 event.consume();
                 hideToTray(stage, "Download still running", "The app is still downloading in the system tray.");
                 return;
@@ -115,38 +123,46 @@ public class NavigationService {
                 }
             }
 
-            settingsService.removeTrayIcon();
+            systemTrayService.removeTrayIcon();
             Platform.setImplicitExit(true);
         });
     }
 
     private void hideToTray(Stage stage, String title, String message) {
-        settingsService.showTrayIcon(stage);
+        systemTrayService.showTrayIcon(stage);
         Platform.setImplicitExit(false);
         stage.hide();
-        settingsService.notifyTrayMessage(title, message);
+        systemTrayService.notifyTrayMessage(title, message);
     }
 
     private void exitFromTray(Stage stage) {
-        if (downloadInProgress.getAsBoolean() && settingsService.shouldCloseToTrayDuringDownload()) {
+        if (downloadInProgress.getAsBoolean() && shouldCloseToTrayDuringDownload()) {
             stage.show();
             stage.toFront();
-            settingsService.notifyTrayMessage("Download still running", "Stop the download before exiting.");
+            systemTrayService.notifyTrayMessage("Download still running", "Stop the download before exiting.");
             return;
         }
 
-        settingsService.removeTrayIcon();
+        systemTrayService.removeTrayIcon();
         Platform.setImplicitExit(true);
         Platform.exit();
     }
 
+    private boolean shouldCloseToTrayDuringDownload() {
+        return settingsService.shouldCloseToTrayDuringDownload() && systemTrayService.isTraySupported();
+    }
+
     private void updateThemeClass(Scene scene, boolean dark) {
+        updateThemeClass(scene.getRoot().getStyleClass(), dark);
+    }
+
+    void updateThemeClass(ObservableList<String> styleClasses, boolean dark) {
         if (dark) {
-            if (!scene.getRoot().getStyleClass().contains("dark")) {
-                scene.getRoot().getStyleClass().add("dark");
+            if (!styleClasses.contains("dark")) {
+                styleClasses.add("dark");
             }
         } else {
-            scene.getRoot().getStyleClass().remove("dark");
+            styleClasses.remove("dark");
         }
     }
 }

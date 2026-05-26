@@ -1,4 +1,4 @@
-package hhlhh.model;
+package hhlhh.desktop;
 
 import java.awt.AWTException;
 import java.awt.Color;
@@ -112,7 +112,7 @@ public class SystemTrayService {
         return AppIconService.loadTrayIcon().orElseGet(this::createFallbackTrayImage);
     }
 
-    private Image createFallbackTrayImage() {
+    Image createFallbackTrayImage() {
         BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         try {

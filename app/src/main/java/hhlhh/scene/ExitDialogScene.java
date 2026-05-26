@@ -2,7 +2,7 @@ package hhlhh.scene;
 
 import java.io.IOException;
 
-import hhlhh.model.ExitDialog;
+import hhlhh.ui.ExitDialog;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;

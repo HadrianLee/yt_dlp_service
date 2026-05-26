@@ -1,4 +1,4 @@
-package hhlhh.model;
+package hhlhh.desktop;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -17,11 +17,11 @@ public final class AppIconService {
 
     public static OperatingSystem currentOperatingSystem() {
         String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-        if (osName.contains("win")) {
-            return OperatingSystem.WINDOWS;
-        }
         if (osName.contains("mac") || osName.contains("darwin")) {
             return OperatingSystem.MACOS;
+        }
+        if (osName.contains("win")) {
+            return OperatingSystem.WINDOWS;
         }
         if (osName.contains("nux") || osName.contains("nix") || osName.contains("aix")) {
             return OperatingSystem.LINUX;

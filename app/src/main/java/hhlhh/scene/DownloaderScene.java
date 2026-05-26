@@ -1,8 +1,9 @@
 package hhlhh.scene;
 
-import hhlhh.model.NavigationService;
-import hhlhh.model.Downloader;
+import hhlhh.desktop.SystemTrayService;
 import hhlhh.model.SettingsService;
+import hhlhh.ui.Downloader;
+import hhlhh.ui.NavigationService;
 
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -23,14 +24,24 @@ public class DownloaderScene {
 
     private final SettingsService settingsService;
     private final NavigationService navigationService;
+    private final SystemTrayService systemTrayService;
 
     public DownloaderScene() {
-        this(new SettingsService(), null);
+        this(new SettingsService(), null, null);
     }
 
     public DownloaderScene(SettingsService settingsService, NavigationService navigationService) {
+        this(settingsService, navigationService, null);
+    }
+
+    public DownloaderScene(
+            SettingsService settingsService,
+            NavigationService navigationService,
+            SystemTrayService systemTrayService
+    ) {
         this.settingsService = settingsService;
         this.navigationService = navigationService;
+        this.systemTrayService = systemTrayService;
     }
 
     public Scene create(Stage stage) {
@@ -101,7 +112,8 @@ public class DownloaderScene {
                 outputArea,
                 progressIndicator,
                 thumbnailView,
-                settingsService
+                settingsService,
+                systemTrayService
         );
         downloader.initialize();
 
